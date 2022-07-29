@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/umputun/metrics/storage"
 	"time"
 )
 
@@ -18,8 +19,8 @@ var TestData = []struct {
 }
 
 type DBData struct {
-	Metric    string
-	TimeStamp time.Time
+	Metric    string    `bson:"metric"`
+	TimeStamp time.Time `bson:"-"`
 	Value     int
 }
 
@@ -50,7 +51,7 @@ func main() {
 		case <-ticker.C:
 			//tick_hour := tick.Hour()*60 + tick.Minute()
 			tickHour := 340
-			if data != nil {
+			if len(data) > 0 {
 				for k, v := range data {
 					if tickHour != data[k].MinuteValue {
 						db = append(db, DBData{
@@ -73,14 +74,14 @@ func main() {
 				}
 				tHour := t.Hour()*60 + t.Minute()
 
-				if _, ok := data[m.metric]; ok {
-					if tHour == data[m.metric].MinuteValue {
-						data[m.metric].Value = data[m.metric].Value + m.value
+				if v, ok := data[m.metric]; ok {
+					if tHour == v.MinuteValue {
+						data[m.metric].Value = v.Value + m.value
 					} else {
 						db = append(db, DBData{
 							Metric:    m.metric,
-							TimeStamp: data[m.metric].TimeStamp,
-							Value:     data[m.metric].Value,
+							TimeStamp: v.TimeStamp,
+							Value:     v.Value,
 						})
 						data[m.metric] = &Metric{
 							Value:       m.value,
@@ -100,4 +101,18 @@ func main() {
 		}
 	}
 	fmt.Println("done2")
+}
+
+func main_for_real() {
+	db := &storage.DBAccessor{}
+
+	svc := storage.New(db)
+	svc.ActivateCleanup(time.Minute) // async, exit right away
+
+	apiService := api.Service{
+		svc:  svc,
+		Port: port,
+	}
+
+	apiService.Run()
 }
