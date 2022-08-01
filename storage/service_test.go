@@ -42,13 +42,25 @@ func TestService_doCleanup(t *testing.T) {
 
 	svc := New(db)
 
-	err := svc.Update(metric.Entry{})
+	err := svc.Update(metric.Entry{
+		Name:      "file_1",
+		TimeStamp: time.Date(2022, 7, 29, 12, 10, 23, 0, time.UTC),
+		Value:     3,
+	})
 	require.NoError(t, err)
 
-	err = svc.Update(metric.Entry{})
+	err = svc.Update(metric.Entry{
+		Name:      "file_1",
+		TimeStamp: time.Date(2022, 7, 29, 12, 10, 23, 0, time.UTC),
+		Value:     4,
+	})
 	require.NoError(t, err)
 
-	err = svc.Update(metric.Entry{})
+	err = svc.Update(metric.Entry{
+		Name:      "file_1",
+		TimeStamp: time.Now(),
+		Value:     11,
+	})
 	require.NoError(t, err)
 
 	//svc.data check
