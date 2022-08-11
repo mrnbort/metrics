@@ -16,6 +16,7 @@ type Service struct {
 
 type Accessor interface {
 	Write(m metric.Entry) error
+	Delete(m metric.Entry) error
 }
 
 func New(db Accessor) *Service {
@@ -31,6 +32,7 @@ func (s *Service) Update(m metric.Entry) error {
 	v, ok := s.data[m.Name]
 	if !ok {
 		// metric not found
+		m.MinSinceMidnight = s.getMinSinceMidnight(m.TimeStamp)
 		s.data[m.Name] = m
 		return nil
 	}
@@ -52,10 +54,18 @@ func (s *Service) Update(m metric.Entry) error {
 	return nil
 }
 
-//func (s *Service) Delete(m metric.Entry) {
-//
-//}
-//
+func (s *Service) Delete(m metric.Entry) error {
+	_, ok := s.data[m.Name]
+	if ok {
+		// metric found in data
+		delete(s.data, m.Name)
+	}
+	if err := s.db.Delete(m); err != nil {
+		return fmt.Errorf("failed to delete metric %v: %w", m, err)
+	}
+	return nil
+}
+
 //func (s *Service) Find() (metric.Entry, error) {
 //
 //}

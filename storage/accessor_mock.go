@@ -18,6 +18,9 @@ var _ Accessor = &AccessorMock{}
 //
 // 		// make and configure a mocked Accessor
 // 		mockedAccessor := &AccessorMock{
+// 			DeleteFunc: func(m metric.Entry) error {
+// 				panic("mock out the Delete method")
+// 			},
 // 			WriteFunc: func(m metric.Entry) error {
 // 				panic("mock out the Write method")
 // 			},
@@ -28,18 +31,58 @@ var _ Accessor = &AccessorMock{}
 //
 // 	}
 type AccessorMock struct {
+	// DeleteFunc mocks the Delete method.
+	DeleteFunc func(m metric.Entry) error
+
 	// WriteFunc mocks the Write method.
 	WriteFunc func(m metric.Entry) error
 
 	// calls tracks calls to the methods.
 	calls struct {
+		// Delete holds details about calls to the Delete method.
+		Delete []struct {
+			// M is the m argument value.
+			M metric.Entry
+		}
 		// Write holds details about calls to the Write method.
 		Write []struct {
 			// M is the m argument value.
 			M metric.Entry
 		}
 	}
-	lockWrite sync.RWMutex
+	lockDelete sync.RWMutex
+	lockWrite  sync.RWMutex
+}
+
+// Delete calls DeleteFunc.
+func (mock *AccessorMock) Delete(m metric.Entry) error {
+	if mock.DeleteFunc == nil {
+		panic("AccessorMock.DeleteFunc: method is nil but Accessor.Delete was just called")
+	}
+	callInfo := struct {
+		M metric.Entry
+	}{
+		M: m,
+	}
+	mock.lockDelete.Lock()
+	mock.calls.Delete = append(mock.calls.Delete, callInfo)
+	mock.lockDelete.Unlock()
+	return mock.DeleteFunc(m)
+}
+
+// DeleteCalls gets all the calls that were made to Delete.
+// Check the length with:
+//     len(mockedAccessor.DeleteCalls())
+func (mock *AccessorMock) DeleteCalls() []struct {
+	M metric.Entry
+} {
+	var calls []struct {
+		M metric.Entry
+	}
+	mock.lockDelete.RLock()
+	calls = mock.calls.Delete
+	mock.lockDelete.RUnlock()
+	return calls
 }
 
 // Write calls WriteFunc.
