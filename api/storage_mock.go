@@ -22,8 +22,8 @@ var _ Storage = &StorageMock{}
 // 			DeleteFunc: func(m metric.Entry) error {
 // 				panic("mock out the Delete method")
 // 			},
-// 			GetFunc: func(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
-// 				panic("mock out the Get method")
+// 			GetAllFunc: func(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+// 				panic("mock out the GetAll method")
 // 			},
 // 			UpdateFunc: func(m metric.Entry) error {
 // 				panic("mock out the Update method")
@@ -38,8 +38,8 @@ type StorageMock struct {
 	// DeleteFunc mocks the Delete method.
 	DeleteFunc func(m metric.Entry) error
 
-	// GetFunc mocks the Get method.
-	GetFunc func(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error)
+	// GetAllFunc mocks the GetAll method.
+	GetAllFunc func(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error)
 
 	// UpdateFunc mocks the Update method.
 	UpdateFunc func(m metric.Entry) error
@@ -51,8 +51,8 @@ type StorageMock struct {
 			// M is the m argument value.
 			M metric.Entry
 		}
-		// Get holds details about calls to the Get method.
-		Get []struct {
+		// GetAll holds details about calls to the GetAll method.
+		GetAll []struct {
 			// From is the from argument value.
 			From time.Time
 			// To is the to argument value.
@@ -67,7 +67,7 @@ type StorageMock struct {
 		}
 	}
 	lockDelete sync.RWMutex
-	lockGet    sync.RWMutex
+	lockGetAll sync.RWMutex
 	lockUpdate sync.RWMutex
 }
 
@@ -102,10 +102,10 @@ func (mock *StorageMock) DeleteCalls() []struct {
 	return calls
 }
 
-// Get calls GetFunc.
-func (mock *StorageMock) Get(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
-	if mock.GetFunc == nil {
-		panic("StorageMock.GetFunc: method is nil but Storage.Get was just called")
+// GetAll calls GetAllFunc.
+func (mock *StorageMock) GetAll(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+	if mock.GetAllFunc == nil {
+		panic("StorageMock.GetAllFunc: method is nil but Storage.GetAll was just called")
 	}
 	callInfo := struct {
 		From     time.Time
@@ -116,16 +116,16 @@ func (mock *StorageMock) Get(from time.Time, to time.Time, interval time.Duratio
 		To:       to,
 		Interval: interval,
 	}
-	mock.lockGet.Lock()
-	mock.calls.Get = append(mock.calls.Get, callInfo)
-	mock.lockGet.Unlock()
-	return mock.GetFunc(from, to, interval)
+	mock.lockGetAll.Lock()
+	mock.calls.GetAll = append(mock.calls.GetAll, callInfo)
+	mock.lockGetAll.Unlock()
+	return mock.GetAllFunc(from, to, interval)
 }
 
-// GetCalls gets all the calls that were made to Get.
+// GetAllCalls gets all the calls that were made to GetAll.
 // Check the length with:
-//     len(mockedStorage.GetCalls())
-func (mock *StorageMock) GetCalls() []struct {
+//     len(mockedStorage.GetAllCalls())
+func (mock *StorageMock) GetAllCalls() []struct {
 	From     time.Time
 	To       time.Time
 	Interval time.Duration
@@ -135,9 +135,9 @@ func (mock *StorageMock) GetCalls() []struct {
 		To       time.Time
 		Interval time.Duration
 	}
-	mock.lockGet.RLock()
-	calls = mock.calls.Get
-	mock.lockGet.RUnlock()
+	mock.lockGetAll.RLock()
+	calls = mock.calls.GetAll
+	mock.lockGetAll.RUnlock()
 	return calls
 }
 

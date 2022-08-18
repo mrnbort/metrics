@@ -17,6 +17,7 @@ type Service struct {
 type Accessor interface {
 	Write(m metric.Entry) error
 	Delete(m metric.Entry) error
+	FindAll(from, to time.Time, interval time.Duration) ([]metric.Entry, error)
 }
 
 func New(db Accessor) *Service {
@@ -69,6 +70,14 @@ func (s *Service) Delete(m metric.Entry) error {
 //func (s *Service) Find() (metric.Entry, error) {
 //
 //}
+
+func (s *Service) GetAll(from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+	metrics, err := s.db.FindAll(from, to, interval)
+	if err != nil {
+		return metrics, fmt.Errorf("failed to find all metrics from %v to %v: %w", from, to, err)
+	}
+	return metrics, nil
+}
 
 func (s *Service) getMinSinceMidnight(tm time.Time) int {
 	return tm.Hour()*60 + tm.Minute()

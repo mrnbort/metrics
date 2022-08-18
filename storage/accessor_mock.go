@@ -6,6 +6,7 @@ package storage
 import (
 	"github.com/umputun/metrics/metric"
 	"sync"
+	"time"
 )
 
 // Ensure, that AccessorMock does implement Accessor.
@@ -21,6 +22,9 @@ var _ Accessor = &AccessorMock{}
 // 			DeleteFunc: func(m metric.Entry) error {
 // 				panic("mock out the Delete method")
 // 			},
+// 			FindAllFunc: func(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+// 				panic("mock out the FindAll method")
+// 			},
 // 			WriteFunc: func(m metric.Entry) error {
 // 				panic("mock out the Write method")
 // 			},
@@ -34,6 +38,9 @@ type AccessorMock struct {
 	// DeleteFunc mocks the Delete method.
 	DeleteFunc func(m metric.Entry) error
 
+	// FindAllFunc mocks the FindAll method.
+	FindAllFunc func(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error)
+
 	// WriteFunc mocks the Write method.
 	WriteFunc func(m metric.Entry) error
 
@@ -44,14 +51,24 @@ type AccessorMock struct {
 			// M is the m argument value.
 			M metric.Entry
 		}
+		// FindAll holds details about calls to the FindAll method.
+		FindAll []struct {
+			// From is the from argument value.
+			From time.Time
+			// To is the to argument value.
+			To time.Time
+			// Interval is the interval argument value.
+			Interval time.Duration
+		}
 		// Write holds details about calls to the Write method.
 		Write []struct {
 			// M is the m argument value.
 			M metric.Entry
 		}
 	}
-	lockDelete sync.RWMutex
-	lockWrite  sync.RWMutex
+	lockDelete  sync.RWMutex
+	lockFindAll sync.RWMutex
+	lockWrite   sync.RWMutex
 }
 
 // Delete calls DeleteFunc.
@@ -82,6 +99,45 @@ func (mock *AccessorMock) DeleteCalls() []struct {
 	mock.lockDelete.RLock()
 	calls = mock.calls.Delete
 	mock.lockDelete.RUnlock()
+	return calls
+}
+
+// FindAll calls FindAllFunc.
+func (mock *AccessorMock) FindAll(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+	if mock.FindAllFunc == nil {
+		panic("AccessorMock.FindAllFunc: method is nil but Accessor.FindAll was just called")
+	}
+	callInfo := struct {
+		From     time.Time
+		To       time.Time
+		Interval time.Duration
+	}{
+		From:     from,
+		To:       to,
+		Interval: interval,
+	}
+	mock.lockFindAll.Lock()
+	mock.calls.FindAll = append(mock.calls.FindAll, callInfo)
+	mock.lockFindAll.Unlock()
+	return mock.FindAllFunc(from, to, interval)
+}
+
+// FindAllCalls gets all the calls that were made to FindAll.
+// Check the length with:
+//     len(mockedAccessor.FindAllCalls())
+func (mock *AccessorMock) FindAllCalls() []struct {
+	From     time.Time
+	To       time.Time
+	Interval time.Duration
+} {
+	var calls []struct {
+		From     time.Time
+		To       time.Time
+		Interval time.Duration
+	}
+	mock.lockFindAll.RLock()
+	calls = mock.calls.FindAll
+	mock.lockFindAll.RUnlock()
 	return calls
 }
 

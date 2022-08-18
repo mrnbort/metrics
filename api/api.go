@@ -7,6 +7,7 @@ import (
 	"github.com/umputun/metrics/metric"
 	"log"
 	"net/http"
+	"time"
 )
 
 //go:generate moq -out storage_mock.go . Storage
@@ -20,7 +21,7 @@ type Service struct {
 type Storage interface {
 	Update(m metric.Entry) error
 	Delete(m metric.Entry) error
-	//Get(from, to time.Time, interval time.Duration) ([]metric.Entry, error)
+	GetAll(from, to time.Time, interval time.Duration) ([]metric.Entry, error)
 }
 
 // JSON is a map alias, just for convenience
@@ -37,13 +38,14 @@ func (s Service) Run() error {
 func (s Service) routes() chi.Router {
 	mux := chi.NewRouter()
 
-	mux.Post("/post-metric", s.updateMetric)
+	mux.Post("/post-metric", s.postMetric)
 	mux.Delete("/delete-metric", s.deleteMetric)
+	mux.Get("/get-metrics?from={from}&to={to}&interval={int}", s.getMetrics)
 
 	return mux
 }
 
-func (s Service) updateMetric(w http.ResponseWriter, r *http.Request) {
+func (s Service) postMetric(w http.ResponseWriter, r *http.Request) {
 	request := metric.Entry{}
 
 	//r.URL.Query().Get("blah")
@@ -65,6 +67,16 @@ func (s Service) updateMetric(w http.ResponseWriter, r *http.Request) {
 // DELETE /delete-metric?name=blah
 func (s Service) deleteMetric(w http.ResponseWriter, r *http.Request) {
 	entry := metric.Entry{Name: r.URL.Query().Get("name")}
-	s.Storage.Delete(entry)
+
+	if err := s.Storage.Delete(entry); err != nil {
+		log.Printf("[WARN] can't delete %v: %v", entry, err)
+		render.Status(r, http.StatusInternalServerError)
+		render.JSON(w, r, JSON{"error": err.Error()})
+		return
+	}
+	render.JSON(w, r, JSON{"status": "ok"})
+}
+
+func (s Service) getMetrics(w http.ResponseWriter, r *http.Request) {
 
 }
