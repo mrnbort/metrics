@@ -38,8 +38,11 @@ func (s Service) Run() error {
 func (s Service) routes() chi.Router {
 	mux := chi.NewRouter()
 
-	mux.Post("/post-metric", s.postMetric)
-	mux.Delete("/delete-metric", s.deleteMetric)
+	mux.Route("/api/metrics", func(mux chi.Router) {
+		mux.Use(Auth)
+		mux.Post("/post-metric", s.postMetric)
+		mux.Delete("/delete-metric", s.deleteMetric)
+	})
 	mux.Get("/get-metrics?from={from}&to={to}&interval={int}", s.getMetrics)
 
 	return mux
