@@ -2,7 +2,10 @@ package api
 
 import (
 	"fmt"
+	"github.com/didip/tollbooth/v7"
+	"github.com/didip/tollbooth_chi"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/umputun/metrics/metric"
 	"log"
@@ -38,11 +41,21 @@ func (s Service) Run() error {
 func (s Service) routes() chi.Router {
 	mux := chi.NewRouter()
 
-	mux.Route("/api/metrics", func(mux chi.Router) {
+	mux.Use(middleware.Throttle(100), middleware.Timeout(60*time.Second))
+	mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(10, nil)))
+
+	mux.Route("/protected", func(mux chi.Router) {
 		mux.Use(Auth)
+		mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(1000, nil)))
 		mux.Post("/post-metric", s.postMetric)
+	})
+
+	mux.Route("/protected", func(mux chi.Router) {
+		mux.Use(Auth)
+		mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(10, nil)))
 		mux.Delete("/delete-metric", s.deleteMetric)
 	})
+
 	mux.Get("/get-metrics?from={from}&to={to}&interval={int}", s.getMetrics)
 
 	return mux
