@@ -9,6 +9,7 @@ import (
 
 const port = ":8080"
 
+// main is the main application function
 func main() {
 	db := &storage.DBAccessor{}
 

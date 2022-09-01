@@ -9,17 +9,20 @@ import (
 
 //go:generate moq -out accessor_mock.go . Accessor
 
+// Service allows access to db and memory
 type Service struct {
 	db   Accessor
 	data map[string]metric.Entry
 }
 
+// Accessor provides access to the db functions
 type Accessor interface {
 	Write(m metric.Entry) error
 	Delete(m metric.Entry) error
 	FindAll(from, to time.Time, interval time.Duration) ([]metric.Entry, error)
 }
 
+// New initiates and returns db and in-memory data
 func New(db Accessor) *Service {
 	result := &Service{
 		data: make(map[string]metric.Entry),
@@ -28,6 +31,8 @@ func New(db Accessor) *Service {
 	return result
 }
 
+// Update adds or updates a metric to the in-memory storage and
+// calls Write to add the metric to the db
 func (s *Service) Update(m metric.Entry) error {
 
 	v, ok := s.data[m.Name]
@@ -55,6 +60,7 @@ func (s *Service) Update(m metric.Entry) error {
 	return nil
 }
 
+// Delete removes the metric from in-memory storage and db
 func (s *Service) Delete(m metric.Entry) error {
 	_, ok := s.data[m.Name]
 	if ok {
@@ -71,6 +77,7 @@ func (s *Service) Delete(m metric.Entry) error {
 //
 //}
 
+// GetAll gets all entries for the specified timeframe and interval
 func (s *Service) GetAll(from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 	metrics, err := s.db.FindAll(from, to, interval)
 	if err != nil {
@@ -79,10 +86,12 @@ func (s *Service) GetAll(from, to time.Time, interval time.Duration) ([]metric.E
 	return metrics, nil
 }
 
+// getMinSinceMidnight calculates the number of minutes since midnight
 func (s *Service) getMinSinceMidnight(tm time.Time) int {
 	return tm.Hour()*60 + tm.Minute()
 }
 
+// ActivateCleanup activates cleanup for the specified duration
 func (s *Service) ActivateCleanup(duration time.Duration) {
 
 	go func() {
@@ -100,6 +109,7 @@ func (s *Service) ActivateCleanup(duration time.Duration) {
 	}()
 }
 
+// doCleanup cleans up the in-memory data by moving entries to db
 func (s *Service) doCleanup() error {
 	if len(s.data) <= 0 {
 		return nil

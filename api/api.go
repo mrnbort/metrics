@@ -1,3 +1,4 @@
+// Package api provides rest-like api
 package api
 
 import (
@@ -15,12 +16,13 @@ import (
 
 //go:generate moq -out storage_mock.go . Storage
 
-// Service blah blah
+// Service provides access to the db
 type Service struct {
 	Storage Storage
 	Port    string
 }
 
+// Storage interface updates, deletes and gets metrics from the memory and db
 type Storage interface {
 	Update(m metric.Entry) error
 	Delete(m metric.Entry) error
@@ -30,6 +32,7 @@ type Storage interface {
 // JSON is a map alias, just for convenience
 type JSON map[string]interface{}
 
+// Run the listener and request's router, activates the rest server
 func (s Service) Run() error {
 	log.Printf("[INFO] activate rest service")
 	if err := http.ListenAndServe(s.Port, s.routes()); err != http.ErrServerClosed {
@@ -44,16 +47,16 @@ func (s Service) routes() chi.Router {
 	mux.Use(middleware.Throttle(100), middleware.Timeout(60*time.Second))
 	mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(10, nil)))
 
-	mux.Route("/protected", func(mux chi.Router) {
+	mux.Route("/protected-post", func(mux chi.Router) {
 		mux.Use(Auth)
 		mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(1000, nil)))
-		mux.Post("/post-metric", s.postMetric)
+		mux.Post("/metric", s.postMetric)
 	})
 
-	mux.Route("/protected", func(mux chi.Router) {
+	mux.Route("/protected-delete", func(mux chi.Router) {
 		mux.Use(Auth)
 		mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(10, nil)))
-		mux.Delete("/delete-metric", s.deleteMetric)
+		mux.Delete("/metric", s.deleteMetric)
 	})
 
 	mux.Get("/get-metrics?from={from}&to={to}&interval={int}", s.getMetrics)
@@ -61,10 +64,10 @@ func (s Service) routes() chi.Router {
 	return mux
 }
 
+// POST /protected-post/metric
 func (s Service) postMetric(w http.ResponseWriter, r *http.Request) {
 	request := metric.Entry{}
 
-	//r.URL.Query().Get("blah")
 	if err := render.DecodeJSON(r.Body, &request); err != nil {
 		log.Printf("[WARN] can't bind request %+v: %v", request, err)
 		render.Status(r, http.StatusBadRequest)
@@ -80,7 +83,7 @@ func (s Service) postMetric(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, JSON{"status": "ok"})
 }
 
-// DELETE /delete-metric?name=blah
+// DELETE /delete-metric?name={metric}
 func (s Service) deleteMetric(w http.ResponseWriter, r *http.Request) {
 	entry := metric.Entry{Name: r.URL.Query().Get("name")}
 
@@ -93,6 +96,7 @@ func (s Service) deleteMetric(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, JSON{"status": "ok"})
 }
 
+// GET /get-metrics?from={from}&to={to}&interval={int}
 func (s Service) getMetrics(w http.ResponseWriter, r *http.Request) {
 
 }

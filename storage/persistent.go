@@ -13,11 +13,13 @@ import (
 
 //go:generate moq -out dbaccessor_mock.go . DBAccessor
 
+// DBAccessor initiates MongoDB
 type DBAccessor struct {
 	//db []metric.Entry
 	db *mongo.Client
 }
 
+// Write inserts entries to db
 func (d *DBAccessor) Write(m metric.Entry) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -32,6 +34,7 @@ func (d *DBAccessor) Write(m metric.Entry) error {
 	return nil
 }
 
+// Delete removes entries from db
 func (d *DBAccessor) Delete(m metric.Entry) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -46,6 +49,7 @@ func (d *DBAccessor) Delete(m metric.Entry) error {
 	return nil
 }
 
+// FindAll gets all entries for the specified timeframe and interval from db
 func (d *DBAccessor) FindAll(from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

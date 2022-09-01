@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// Auth authenticates the user
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()

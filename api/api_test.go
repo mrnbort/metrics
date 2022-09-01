@@ -36,7 +36,7 @@ func TestService_postMetric(t *testing.T) {
 
 	{ // successful attempt
 		tm := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
-		req, err := http.NewRequest("POST", ts.URL+"/protected/post-metric",
+		req, err := http.NewRequest("POST", ts.URL+"/protected-post/metric",
 			strings.NewReader(fmt.Sprintf(`{"name": "test", "value":123, "time_stamp": "%s"}`, tm.Format(time.RFC3339))))
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
@@ -54,7 +54,7 @@ func TestService_postMetric(t *testing.T) {
 	}
 
 	{ // failed decode
-		req, err := http.NewRequest("POST", ts.URL+"/protected/post-metric",
+		req, err := http.NewRequest("POST", ts.URL+"/protected-post/metric",
 			strings.NewReader(fmt.Sprintf(``)))
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
@@ -67,7 +67,7 @@ func TestService_postMetric(t *testing.T) {
 			return errors.New("oh oh")
 		}
 		tm := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
-		req, err := http.NewRequest("POST", ts.URL+"/protected/post-metric",
+		req, err := http.NewRequest("POST", ts.URL+"/protected-post/metric",
 			strings.NewReader(fmt.Sprintf(`{"name": "test", "value":123, "time_stamp": "%s"}`, tm.Format(time.RFC3339))))
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
@@ -99,21 +99,25 @@ func TestService_deleteMetric(t *testing.T) {
 
 	{ // successful attempt
 		tm := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
-		req, err := http.NewRequest("POST", ts.URL+"/protected/post-metric",
+		req, err := http.NewRequest("POST", ts.URL+"/protected-post/metric",
 			strings.NewReader(fmt.Sprintf(`{"name": "test", "value":123, "time_stamp": "%s"}`, tm.Format(time.RFC3339))))
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
 		resp, err := client.Do(req)
 		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		data, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Equal(t, `{"status":"ok"}`+"\n", string(data))
 
-		url := fmt.Sprintf("%s/protected/delete-metric?name=test", ts.URL)
+		url := fmt.Sprintf("%s/protected-delete/metric?name=test", ts.URL)
 		req, err = http.NewRequest("DELETE", url, nil)
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
 		resp, err = client.Do(req)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		data, err := io.ReadAll(resp.Body)
+		data, err = io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Equal(t, `{"status":"ok"}`+"\n", string(data))
 
@@ -125,7 +129,7 @@ func TestService_deleteMetric(t *testing.T) {
 		strg.DeleteFunc = func(m metric.Entry) error {
 			return errors.New("oh oh")
 		}
-		req, err := http.NewRequest("DELETE", ts.URL+"/protected/delete-metric?name=test", nil)
+		req, err := http.NewRequest("DELETE", ts.URL+"/protected-delete/metric?name=test", nil)
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
 		resp, err := client.Do(req)
