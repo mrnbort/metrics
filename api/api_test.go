@@ -98,9 +98,9 @@ func TestService_deleteMetric(t *testing.T) {
 	client := http.Client{Timeout: time.Second}
 
 	{ // successful attempt
-		tm := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
-		req, err := http.NewRequest("POST", ts.URL+"/protected-post/metric",
-			strings.NewReader(fmt.Sprintf(`{"name": "test", "value":123, "time_stamp": "%s"}`, tm.Format(time.RFC3339))))
+
+		url := fmt.Sprintf("%s/protected-delete/metric?name=test", ts.URL)
+		req, err := http.NewRequest("DELETE", url, nil)
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
 		resp, err := client.Do(req)
@@ -110,19 +110,19 @@ func TestService_deleteMetric(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, `{"status":"ok"}`+"\n", string(data))
 
-		url := fmt.Sprintf("%s/protected-delete/metric?name=test", ts.URL)
-		req, err = http.NewRequest("DELETE", url, nil)
-		require.NoError(t, err)
-		req.SetBasicAuth("admin", "Lapatusik")
-		resp, err = client.Do(req)
-		require.NoError(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		data, err = io.ReadAll(resp.Body)
-		require.NoError(t, err)
-		assert.Equal(t, `{"status":"ok"}`+"\n", string(data))
-
 		require.Equal(t, 1, len(strg.DeleteCalls()))
 		assert.Equal(t, "test", strg.DeleteCalls()[0].M.Name)
+	}
+
+	{ // failed auth
+		tm := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
+		req, err := http.NewRequest("POST", ts.URL+"/protected-post/metric",
+			strings.NewReader(fmt.Sprintf(`{"name": "test", "value":123, "time_stamp": "%s"}`, tm.Format(time.RFC3339))))
+		require.NoError(t, err)
+		req.SetBasicAuth("admin", "LapatusikBad")
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	}
 
 	{ // failed delete

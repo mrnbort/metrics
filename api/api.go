@@ -20,6 +20,7 @@ import (
 type Service struct {
 	Storage Storage
 	Port    string
+	Auth    AuthMidlwr
 }
 
 // Storage interface updates, deletes and gets metrics from the memory and db
@@ -43,21 +44,30 @@ func (s Service) Run() error {
 
 func (s Service) routes() chi.Router {
 	mux := chi.NewRouter()
-
 	mux.Use(middleware.Throttle(100), middleware.Timeout(60*time.Second))
 	mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(10, nil)))
 
-	mux.Route("/protected-post", func(mux chi.Router) {
-		mux.Use(Auth)
-		mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(1000, nil)))
-		mux.Post("/metric", s.postMetric)
+	limiter := func(limit float64) func(http.Handler) http.Handler {
+		return tollbooth_chi.LimitHandler(tollbooth.NewLimiter(limit, nil))
+	}
+
+	mux.Group(func(r chi.Router) { // protected routes
+		r.Use(s.Auth.Handler)
+		r.With(limiter(1000)).Post("/metric", s.postMetric)
+		r.With(limiter(10)).Delete("/metric", s.deleteMetric)
 	})
 
-	mux.Route("/protected-delete", func(mux chi.Router) {
-		mux.Use(Auth)
-		mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(10, nil)))
-		mux.Delete("/metric", s.deleteMetric)
-	})
+	//mux.Route("/protected-post", func(mux chi.Router) {
+	//	mux.Use(s.Auth.Handler)
+	//	mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(1000, nil)))
+	//	mux.Post("/metric", s.postMetric)
+	//})
+	//
+	//mux.Route("/protected-delete", func(mux chi.Router) {
+	//	mux.Use(s.Auth.Handler)
+	//	mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(10, nil)))
+	//	mux.Delete("/metric", s.deleteMetric)
+	//})
 
 	mux.Get("/get-metrics?from={from}&to={to}&interval={int}", s.getMetrics)
 

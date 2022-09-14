@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"github.com/umputun/metrics/metric"
 	"log"
@@ -17,7 +18,7 @@ type Service struct {
 
 // Accessor provides access to the db functions
 type Accessor interface {
-	Write(m metric.Entry) error
+	Write(ctx context.Context, m metric.Entry) error
 	Delete(m metric.Entry) error
 	FindAll(from, to time.Time, interval time.Duration) ([]metric.Entry, error)
 }

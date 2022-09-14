@@ -9,4 +9,5 @@ type Entry struct {
 	Value     int       `bson:"value" json:"value"`
 
 	MinSinceMidnight int `json:"-" bson:"-"`
+	Type             string
 }

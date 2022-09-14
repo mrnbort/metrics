@@ -6,7 +6,6 @@ import (
 	"github.com/umputun/metrics/metric"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"time"
 )
@@ -16,21 +15,21 @@ import (
 // DBAccessor initiates MongoDB
 type DBAccessor struct {
 	//db []metric.Entry
-	db *mongo.Client
+	db               *mongo.Client
+	dbName, collName string
+}
+
+func NewAccessor(db *mongo.Client, dbName, collName string) *DBAccessor {
+	return &DBAccessor{db: db, dbName: dbName, collName: collName}
 }
 
 // Write inserts entries to db
-func (d *DBAccessor) Write(m metric.Entry) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	d.db, _ = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
-	collection := d.db.Database("metrics-service").Collection("metrics")
-
-	_, err := collection.InsertOne(ctx, m)
-	if err != nil {
-		log.Fatal(err)
+func (d *DBAccessor) Write(ctx context.Context, m metric.Entry) error {
+	collection := d.db.Database(d.dbName).Collection(d.collName)
+	if _, err := collection.InsertOne(ctx, m); err != nil {
+		return fmt.Errorf("failed it write %+v: %w", m, err)
 	}
-	fmt.Printf("inserted metric %v\n", m.Name)
+	log.Printf("inserted metric: %v", m.Name)
 	return nil
 }
 
@@ -38,7 +37,6 @@ func (d *DBAccessor) Write(m metric.Entry) error {
 func (d *DBAccessor) Delete(m metric.Entry) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	d.db, _ = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	collection := d.db.Database("metrics-service").Collection("metrics")
 
 	_, err := collection.DeleteMany(ctx, m)
@@ -53,7 +51,6 @@ func (d *DBAccessor) Delete(m metric.Entry) error {
 func (d *DBAccessor) FindAll(from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	d.db, _ = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	collection := d.db.Database("metrics-service").Collection("metrics")
 
 	var metrics []metric.Entry
