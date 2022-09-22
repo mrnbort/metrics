@@ -27,7 +27,11 @@ func TestService_postMetric(t *testing.T) {
 		//	return []metric.Entry{{Name: "aa", Value: 123}, {}, {}}, nil
 		//},
 	}
-	svc := &Service{Storage: strg}
+
+	svc := &Service{Storage: strg, Auth: AuthMidlwr{
+		User:   "admin",
+		Passwd: "Lapatusik",
+	}}
 
 	ts := httptest.NewServer(svc.routes())
 	defer ts.Close()
@@ -36,7 +40,7 @@ func TestService_postMetric(t *testing.T) {
 
 	{ // successful attempt
 		tm := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
-		req, err := http.NewRequest("POST", ts.URL+"/protected-post/metric",
+		req, err := http.NewRequest("POST", ts.URL+"/metric",
 			strings.NewReader(fmt.Sprintf(`{"name": "test", "value":123, "time_stamp": "%s"}`, tm.Format(time.RFC3339))))
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
@@ -54,7 +58,7 @@ func TestService_postMetric(t *testing.T) {
 	}
 
 	{ // failed decode
-		req, err := http.NewRequest("POST", ts.URL+"/protected-post/metric",
+		req, err := http.NewRequest("POST", ts.URL+"/metric",
 			strings.NewReader(fmt.Sprintf(``)))
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
@@ -62,12 +66,23 @@ func TestService_postMetric(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	}
 
+	{ // failed auth
+		tm := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
+		req, err := http.NewRequest("POST", ts.URL+"/metric",
+			strings.NewReader(fmt.Sprintf(`{"name": "test", "value":123, "time_stamp": "%s"}`, tm.Format(time.RFC3339))))
+		require.NoError(t, err)
+		req.SetBasicAuth("admin", "LapatusikBad")
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	}
+
 	{ // failed update
 		strg.UpdateFunc = func(m metric.Entry) error {
 			return errors.New("oh oh")
 		}
 		tm := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
-		req, err := http.NewRequest("POST", ts.URL+"/protected-post/metric",
+		req, err := http.NewRequest("POST", ts.URL+"/metric",
 			strings.NewReader(fmt.Sprintf(`{"name": "test", "value":123, "time_stamp": "%s"}`, tm.Format(time.RFC3339))))
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
@@ -78,7 +93,6 @@ func TestService_postMetric(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, `{"error":"oh oh"}`+"\n", string(data))
 	}
-
 }
 
 func TestService_deleteMetric(t *testing.T) {
@@ -90,7 +104,10 @@ func TestService_deleteMetric(t *testing.T) {
 			return nil
 		},
 	}
-	svc := &Service{Storage: strg}
+	svc := &Service{Storage: strg, Auth: AuthMidlwr{
+		User:   "admin",
+		Passwd: "Lapatusik",
+	}}
 
 	ts := httptest.NewServer(svc.routes())
 	defer ts.Close()
@@ -98,8 +115,7 @@ func TestService_deleteMetric(t *testing.T) {
 	client := http.Client{Timeout: time.Second}
 
 	{ // successful attempt
-
-		url := fmt.Sprintf("%s/protected-delete/metric?name=test", ts.URL)
+		url := fmt.Sprintf("%s/metric?name=test", ts.URL)
 		req, err := http.NewRequest("DELETE", url, nil)
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
@@ -115,9 +131,8 @@ func TestService_deleteMetric(t *testing.T) {
 	}
 
 	{ // failed auth
-		tm := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
-		req, err := http.NewRequest("POST", ts.URL+"/protected-post/metric",
-			strings.NewReader(fmt.Sprintf(`{"name": "test", "value":123, "time_stamp": "%s"}`, tm.Format(time.RFC3339))))
+		url := fmt.Sprintf("%s/metric?name=test", ts.URL)
+		req, err := http.NewRequest("DELETE", url, nil)
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "LapatusikBad")
 		resp, err := client.Do(req)
@@ -129,7 +144,7 @@ func TestService_deleteMetric(t *testing.T) {
 		strg.DeleteFunc = func(m metric.Entry) error {
 			return errors.New("oh oh")
 		}
-		req, err := http.NewRequest("DELETE", ts.URL+"/protected-delete/metric?name=test", nil)
+		req, err := http.NewRequest("DELETE", ts.URL+"/metric?name=test", nil)
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
 		resp, err := client.Do(req)
@@ -139,5 +154,4 @@ func TestService_deleteMetric(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, `{"error":"oh oh"}`+"\n", string(data))
 	}
-
 }

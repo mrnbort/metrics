@@ -25,20 +25,20 @@ func main() {
 
 	db := storage.NewAccessor(dbConn, "metrics-service", "metrics")
 	svc := storage.New(db)
-	svc.ActivateCleanup(time.Minute) // async, exit right away
+	svc.ActivateCleanup(ctx, time.Minute) // async, exit right away
 
-	auth := api.AuthMidlwr{User: "sfsf", Passwd: "sdfsd"}
+	auth := api.AuthMidlwr{User: "admin", Passwd: "Lapatusik"}
 	apiService := api.Service{
 		Storage: svc,
 		Port:    port,
 		Auth:    auth,
 	}
 
-	reag := &storage.Reaggregator{
+	reagg := &storage.Reaggregator{
 		MongoClient: dbConn,
 		DbName:      "metrics-service",
 		CollName:    "metrics",
-		Buckets: []storage.ReagrBucket{
+		Buckets: []storage.ReaggrBucket{
 			{Interval: 30 * time.Minute, Age: 24 * time.Hour, SrcType: "1m", DstType: "30m"},
 		},
 	}

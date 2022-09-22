@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"github.com/didip/tollbooth/v7"
 	"github.com/didip/tollbooth_chi"
@@ -25,9 +26,9 @@ type Service struct {
 
 // Storage interface updates, deletes and gets metrics from the memory and db
 type Storage interface {
-	Update(m metric.Entry) error
-	Delete(m metric.Entry) error
-	GetAll(from, to time.Time, interval time.Duration) ([]metric.Entry, error)
+	Update(ctx context.Context, m metric.Entry) error
+	Delete(ctx context.Context, m metric.Entry) error
+	GetAll(ctx context.Context, from, to time.Time, interval time.Duration) ([]metric.Entry, error)
 }
 
 // JSON is a map alias, just for convenience
@@ -77,6 +78,7 @@ func (s Service) routes() chi.Router {
 // POST /protected-post/metric
 func (s Service) postMetric(w http.ResponseWriter, r *http.Request) {
 	request := metric.Entry{}
+	ctx := r.Context()
 
 	if err := render.DecodeJSON(r.Body, &request); err != nil {
 		log.Printf("[WARN] can't bind request %+v: %v", request, err)
@@ -84,7 +86,7 @@ func (s Service) postMetric(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, r, JSON{"error": err.Error()})
 		return
 	}
-	if err := s.Storage.Update(request); err != nil {
+	if err := s.Storage.Update(ctx, request); err != nil {
 		log.Printf("[WARN] can't update request %v: %v", request, err)
 		render.Status(r, http.StatusInternalServerError)
 		render.JSON(w, r, JSON{"error": err.Error()})
@@ -96,8 +98,9 @@ func (s Service) postMetric(w http.ResponseWriter, r *http.Request) {
 // DELETE /delete-metric?name={metric}
 func (s Service) deleteMetric(w http.ResponseWriter, r *http.Request) {
 	entry := metric.Entry{Name: r.URL.Query().Get("name")}
+	ctx := r.Context()
 
-	if err := s.Storage.Delete(entry); err != nil {
+	if err := s.Storage.Delete(ctx, entry); err != nil {
 		log.Printf("[WARN] can't delete %v: %v", entry, err)
 		render.Status(r, http.StatusInternalServerError)
 		render.JSON(w, r, JSON{"error": err.Error()})

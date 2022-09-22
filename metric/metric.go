@@ -8,6 +8,6 @@ type Entry struct {
 	TimeStamp time.Time `bson:"time_stamp" json:"time_stamp"`
 	Value     int       `bson:"value" json:"value"`
 
-	MinSinceMidnight int `json:"-" bson:"-"`
-	Type             string
+	MinSinceMidnight int    `bson:"-" json:"-"`
+	Type             string `bson:"type" json:"type"`
 }

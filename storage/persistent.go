@@ -14,11 +14,11 @@ import (
 
 // DBAccessor initiates MongoDB
 type DBAccessor struct {
-	//db []metric.Entry
 	db               *mongo.Client
 	dbName, collName string
 }
 
+//
 func NewAccessor(db *mongo.Client, dbName, collName string) *DBAccessor {
 	return &DBAccessor{db: db, dbName: dbName, collName: collName}
 }
@@ -26,19 +26,17 @@ func NewAccessor(db *mongo.Client, dbName, collName string) *DBAccessor {
 // Write inserts entries to db
 func (d *DBAccessor) Write(ctx context.Context, m metric.Entry) error {
 	collection := d.db.Database(d.dbName).Collection(d.collName)
+	m.Type = "1m"
 	if _, err := collection.InsertOne(ctx, m); err != nil {
-		return fmt.Errorf("failed it write %+v: %w", m, err)
+		return fmt.Errorf("failed to write %+v: %w", m, err)
 	}
 	log.Printf("inserted metric: %v", m.Name)
 	return nil
 }
 
 // Delete removes entries from db
-func (d *DBAccessor) Delete(m metric.Entry) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	collection := d.db.Database("metrics-service").Collection("metrics")
-
+func (d *DBAccessor) Delete(ctx context.Context, m metric.Entry) error {
+	collection := d.db.Database(d.dbName).Collection(d.collName)
 	_, err := collection.DeleteMany(ctx, m)
 	if err != nil {
 		log.Fatal(err)
@@ -48,11 +46,8 @@ func (d *DBAccessor) Delete(m metric.Entry) error {
 }
 
 // FindAll gets all entries for the specified timeframe and interval from db
-func (d *DBAccessor) FindAll(from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	collection := d.db.Database("metrics-service").Collection("metrics")
-
+func (d *DBAccessor) FindAll(ctx context.Context, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+	collection := d.db.Database(d.dbName).Collection(d.collName)
 	var metrics []metric.Entry
 
 	cursor, err := collection.Find(ctx, bson.M{"time_stamp": bson.M{

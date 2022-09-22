@@ -13,9 +13,9 @@ type AuthMidlwr struct {
 // Handler authenticates the user
 func (a *AuthMidlwr) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		username, password, ok := r.BasicAuth()
+		user, password, ok := r.BasicAuth()
 		if ok {
-			usernameHash := sha256.Sum256([]byte(username))
+			usernameHash := sha256.Sum256([]byte(user))
 			passwordHash := sha256.Sum256([]byte(password))
 			expectedUsernameHash := sha256.Sum256([]byte(a.User))
 			expectedPasswordHash := sha256.Sum256([]byte(a.Passwd))
