@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"github.com/stretchr/testify/require"
+	"github.com/umputun/metrics/metric"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"testing"
@@ -22,5 +23,14 @@ func TestDBAccessor_Write(t *testing.T) {
 
 	acc := NewAccessor(dbConn, "test", "metrics")
 
-	dbConn.Database("test").Collection("metrics").Find()
+	//dbConn.Database("test").Collection("metrics").Find()
+
+	err = acc.Write(ctx, metric.Entry{
+		Name:      "file_1",
+		TimeStamp: time.Date(2022, 7, 29, 12, 10, 23, 0, time.UTC),
+		Value:     5,
+	})
+
+	require.NoError(t, err)
+
 }

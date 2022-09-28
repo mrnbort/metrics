@@ -4,6 +4,7 @@
 package storage
 
 import (
+	"context"
 	"github.com/umputun/metrics/metric"
 	"sync"
 	"time"
@@ -19,13 +20,13 @@ var _ Accessor = &AccessorMock{}
 //
 // 		// make and configure a mocked Accessor
 // 		mockedAccessor := &AccessorMock{
-// 			DeleteFunc: func(m metric.Entry) error {
+// 			DeleteFunc: func(ctx context.Context, m metric.Entry) error {
 // 				panic("mock out the Delete method")
 // 			},
-// 			FindAllFunc: func(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+// 			FindAllFunc: func(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 // 				panic("mock out the FindAll method")
 // 			},
-// 			WriteFunc: func(m metric.Entry) error {
+// 			WriteFunc: func(ctx context.Context, m metric.Entry) error {
 // 				panic("mock out the Write method")
 // 			},
 // 		}
@@ -36,23 +37,27 @@ var _ Accessor = &AccessorMock{}
 // 	}
 type AccessorMock struct {
 	// DeleteFunc mocks the Delete method.
-	DeleteFunc func(m metric.Entry) error
+	DeleteFunc func(ctx context.Context, m metric.Entry) error
 
 	// FindAllFunc mocks the FindAll method.
-	FindAllFunc func(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error)
+	FindAllFunc func(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error)
 
 	// WriteFunc mocks the Write method.
-	WriteFunc func(m metric.Entry) error
+	WriteFunc func(ctx context.Context, m metric.Entry) error
 
 	// calls tracks calls to the methods.
 	calls struct {
 		// Delete holds details about calls to the Delete method.
 		Delete []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// M is the m argument value.
 			M metric.Entry
 		}
 		// FindAll holds details about calls to the FindAll method.
 		FindAll []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// From is the from argument value.
 			From time.Time
 			// To is the to argument value.
@@ -62,6 +67,8 @@ type AccessorMock struct {
 		}
 		// Write holds details about calls to the Write method.
 		Write []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
 			// M is the m argument value.
 			M metric.Entry
 		}
@@ -72,29 +79,33 @@ type AccessorMock struct {
 }
 
 // Delete calls DeleteFunc.
-func (mock *AccessorMock) Delete(m metric.Entry) error {
+func (mock *AccessorMock) Delete(ctx context.Context, m metric.Entry) error {
 	if mock.DeleteFunc == nil {
 		panic("AccessorMock.DeleteFunc: method is nil but Accessor.Delete was just called")
 	}
 	callInfo := struct {
-		M metric.Entry
+		Ctx context.Context
+		M   metric.Entry
 	}{
-		M: m,
+		Ctx: ctx,
+		M:   m,
 	}
 	mock.lockDelete.Lock()
 	mock.calls.Delete = append(mock.calls.Delete, callInfo)
 	mock.lockDelete.Unlock()
-	return mock.DeleteFunc(m)
+	return mock.DeleteFunc(ctx, m)
 }
 
 // DeleteCalls gets all the calls that were made to Delete.
 // Check the length with:
 //     len(mockedAccessor.DeleteCalls())
 func (mock *AccessorMock) DeleteCalls() []struct {
-	M metric.Entry
+	Ctx context.Context
+	M   metric.Entry
 } {
 	var calls []struct {
-		M metric.Entry
+		Ctx context.Context
+		M   metric.Entry
 	}
 	mock.lockDelete.RLock()
 	calls = mock.calls.Delete
@@ -103,15 +114,17 @@ func (mock *AccessorMock) DeleteCalls() []struct {
 }
 
 // FindAll calls FindAllFunc.
-func (mock *AccessorMock) FindAll(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+func (mock *AccessorMock) FindAll(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 	if mock.FindAllFunc == nil {
 		panic("AccessorMock.FindAllFunc: method is nil but Accessor.FindAll was just called")
 	}
 	callInfo := struct {
+		Ctx      context.Context
 		From     time.Time
 		To       time.Time
 		Interval time.Duration
 	}{
+		Ctx:      ctx,
 		From:     from,
 		To:       to,
 		Interval: interval,
@@ -119,18 +132,20 @@ func (mock *AccessorMock) FindAll(from time.Time, to time.Time, interval time.Du
 	mock.lockFindAll.Lock()
 	mock.calls.FindAll = append(mock.calls.FindAll, callInfo)
 	mock.lockFindAll.Unlock()
-	return mock.FindAllFunc(from, to, interval)
+	return mock.FindAllFunc(ctx, from, to, interval)
 }
 
 // FindAllCalls gets all the calls that were made to FindAll.
 // Check the length with:
 //     len(mockedAccessor.FindAllCalls())
 func (mock *AccessorMock) FindAllCalls() []struct {
+	Ctx      context.Context
 	From     time.Time
 	To       time.Time
 	Interval time.Duration
 } {
 	var calls []struct {
+		Ctx      context.Context
 		From     time.Time
 		To       time.Time
 		Interval time.Duration
@@ -142,29 +157,33 @@ func (mock *AccessorMock) FindAllCalls() []struct {
 }
 
 // Write calls WriteFunc.
-func (mock *AccessorMock) Write(m metric.Entry) error {
+func (mock *AccessorMock) Write(ctx context.Context, m metric.Entry) error {
 	if mock.WriteFunc == nil {
 		panic("AccessorMock.WriteFunc: method is nil but Accessor.Write was just called")
 	}
 	callInfo := struct {
-		M metric.Entry
+		Ctx context.Context
+		M   metric.Entry
 	}{
-		M: m,
+		Ctx: ctx,
+		M:   m,
 	}
 	mock.lockWrite.Lock()
 	mock.calls.Write = append(mock.calls.Write, callInfo)
 	mock.lockWrite.Unlock()
-	return mock.WriteFunc(m)
+	return mock.WriteFunc(ctx, m)
 }
 
 // WriteCalls gets all the calls that were made to Write.
 // Check the length with:
 //     len(mockedAccessor.WriteCalls())
 func (mock *AccessorMock) WriteCalls() []struct {
-	M metric.Entry
+	Ctx context.Context
+	M   metric.Entry
 } {
 	var calls []struct {
-		M metric.Entry
+		Ctx context.Context
+		M   metric.Entry
 	}
 	mock.lockWrite.RLock()
 	calls = mock.calls.Write

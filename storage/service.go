@@ -20,6 +20,8 @@ type Service struct {
 type Accessor interface {
 	Write(ctx context.Context, m metric.Entry) error
 	Delete(ctx context.Context, m metric.Entry) error
+	GetMetricsList(ctx context.Context) ([]string, error)
+	FindOneMetric(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error)
 	FindAll(ctx context.Context, from, to time.Time, interval time.Duration) ([]metric.Entry, error)
 }
 
@@ -74,6 +76,24 @@ func (s *Service) Delete(ctx context.Context, m metric.Entry) error {
 		return fmt.Errorf("failed to delete metric %v: %w", m, err)
 	}
 	return nil
+}
+
+// GetList returns a list of all the available metrics in db
+func (s *Service) GetList(ctx context.Context) ([]string, error) {
+	metrics, err := s.db.GetMetricsList(ctx)
+	if err != nil {
+		return metrics, fmt.Errorf("failed to find all metrics: %w", err)
+	}
+	return metrics, nil
+}
+
+// GetOneMetric returns a list values for the requested metric during the requested interval
+func (s *Service) GetOneMetric(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+	metrics, err := s.db.FindOneMetric(ctx, name, from, to, interval)
+	if err != nil {
+		return metrics, fmt.Errorf("failed to find all metrics: %w", err)
+	}
+	return metrics, nil
 }
 
 //func (s *Service) Find() (metric.Entry, error) {

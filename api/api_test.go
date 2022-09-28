@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ import (
 func TestService_postMetric(t *testing.T) {
 
 	strg := &StorageMock{
-		UpdateFunc: func(m metric.Entry) error {
+		UpdateFunc: func(ctx context.Context, m metric.Entry) error {
 			//assert.Equal(t, "test", m.Name)
 			//assert.Equal(t, 123, m.Value)
 			//assert.Equal(t, tm, m.TimeStamp)
@@ -78,7 +79,7 @@ func TestService_postMetric(t *testing.T) {
 	}
 
 	{ // failed update
-		strg.UpdateFunc = func(m metric.Entry) error {
+		strg.UpdateFunc = func(ctx context.Context, m metric.Entry) error {
 			return errors.New("oh oh")
 		}
 		tm := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
@@ -97,10 +98,10 @@ func TestService_postMetric(t *testing.T) {
 
 func TestService_deleteMetric(t *testing.T) {
 	strg := &StorageMock{
-		DeleteFunc: func(m metric.Entry) error {
+		DeleteFunc: func(ctx context.Context, m metric.Entry) error {
 			return nil
 		},
-		UpdateFunc: func(m metric.Entry) error {
+		UpdateFunc: func(ctx context.Context, m metric.Entry) error {
 			return nil
 		},
 	}
@@ -141,7 +142,7 @@ func TestService_deleteMetric(t *testing.T) {
 	}
 
 	{ // failed delete
-		strg.DeleteFunc = func(m metric.Entry) error {
+		strg.DeleteFunc = func(ctx context.Context, m metric.Entry) error {
 			return errors.New("oh oh")
 		}
 		req, err := http.NewRequest("DELETE", ts.URL+"/metric?name=test", nil)

@@ -28,6 +28,8 @@ type Service struct {
 type Storage interface {
 	Update(ctx context.Context, m metric.Entry) error
 	Delete(ctx context.Context, m metric.Entry) error
+	GetList(ctx context.Context) ([]string, error)
+	GetOneMetric(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error)
 	GetAll(ctx context.Context, from, to time.Time, interval time.Duration) ([]metric.Entry, error)
 }
 
@@ -70,12 +72,14 @@ func (s Service) routes() chi.Router {
 	//	mux.Delete("/metric", s.deleteMetric)
 	//})
 
+	mux.Get("/get-metrics-list", s.getMetricsList)
+	mux.Get("/get-metric?name={name}&from={from}&to={to}&interval={int}", s.getMetric)
 	mux.Get("/get-metrics?from={from}&to={to}&interval={int}", s.getMetrics)
 
 	return mux
 }
 
-// POST /protected-post/metric
+// POST /metric
 func (s Service) postMetric(w http.ResponseWriter, r *http.Request) {
 	request := metric.Entry{}
 	ctx := r.Context()
@@ -95,7 +99,7 @@ func (s Service) postMetric(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, JSON{"status": "ok"})
 }
 
-// DELETE /delete-metric?name={metric}
+// DELETE /metric?name={metric}
 func (s Service) deleteMetric(w http.ResponseWriter, r *http.Request) {
 	entry := metric.Entry{Name: r.URL.Query().Get("name")}
 	ctx := r.Context()
@@ -107,6 +111,33 @@ func (s Service) deleteMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render.JSON(w, r, JSON{"status": "ok"})
+}
+
+// GET /get-metrics-list
+func (s Service) getMetricsList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	result, err := s.Storage.GetList(ctx)
+	if err != nil {
+		log.Printf("[WARN] can't get a list of metrics: %v", err)
+		render.Status(r, http.StatusInternalServerError)
+		render.JSON(w, r, JSON{"error": err.Error()})
+		return
+	}
+
+	if len(result) == 0 {
+		// no metrics in db
+		render.JSON(w, r, JSON{"error": "no metrics in db"})
+	}
+
+	render.JSON(w, r, result)
+}
+
+// GET /get-metric?name={name}&from={from}&to={to}&interval={int}
+func (s Service) getMetric(w http.ResponseWriter, r *http.Request) {
+	//ctx := r.Context()
+
+	//result, err := s.Storage.GetOneMetric(ctx)
 }
 
 // GET /get-metrics?from={from}&to={to}&interval={int}

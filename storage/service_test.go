@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umputun/metrics/metric"
@@ -35,28 +36,31 @@ func TestService_getMinSinceMidnight(t *testing.T) {
 
 func TestService_doCleanup(t *testing.T) {
 	db := &AccessorMock{
-		WriteFunc: func(m metric.Entry) error {
+		WriteFunc: func(ctx context.Context, m metric.Entry) error {
 			return nil
 		},
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	svc := New(db)
 
-	err := svc.Update(metric.Entry{
+	err := svc.Update(ctx, metric.Entry{
 		Name:      "file_1",
 		TimeStamp: time.Date(2022, 7, 29, 12, 10, 23, 0, time.UTC),
 		Value:     3,
 	})
 	require.NoError(t, err)
 
-	err = svc.Update(metric.Entry{
+	err = svc.Update(ctx, metric.Entry{
 		Name:      "file_1",
 		TimeStamp: time.Date(2022, 7, 29, 12, 10, 23, 0, time.UTC),
 		Value:     4,
 	})
 	require.NoError(t, err)
 
-	err = svc.Update(metric.Entry{
+	err = svc.Update(ctx, metric.Entry{
 		Name:      "file_1",
 		TimeStamp: time.Date(2022, 7, 29, 12, 10, 23, 0, time.UTC),
 		Value:     11,
@@ -66,7 +70,7 @@ func TestService_doCleanup(t *testing.T) {
 	//svc.data check
 	assert.Equal(t, 18, svc.data["file_1"].Value)
 
-	err = svc.doCleanup()
+	err = svc.doCleanup(ctx)
 	require.NoError(t, err)
 
 	//svc.data check, some gone
@@ -76,28 +80,31 @@ func TestService_doCleanup(t *testing.T) {
 
 func TestService_Update(t *testing.T) {
 	db := &AccessorMock{
-		WriteFunc: func(m metric.Entry) error {
+		WriteFunc: func(ctx context.Context, m metric.Entry) error {
 			return nil
 		},
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	svc := New(db)
 
-	err := svc.Update(metric.Entry{
+	err := svc.Update(ctx, metric.Entry{
 		Name:      "file_1",
 		TimeStamp: time.Date(2022, 7, 29, 12, 10, 23, 0, time.UTC),
 		Value:     1,
 	})
 	require.NoError(t, err)
 
-	err = svc.Update(metric.Entry{
+	err = svc.Update(ctx, metric.Entry{
 		Name:      "file_2",
 		TimeStamp: time.Date(2022, 7, 29, 12, 10, 23, 0, time.UTC),
 		Value:     2,
 	})
 	require.NoError(t, err)
 
-	err = svc.Update(metric.Entry{
+	err = svc.Update(ctx, metric.Entry{
 		Name:      "file_2",
 		TimeStamp: time.Date(2022, 7, 29, 12, 10, 23, 0, time.UTC),
 		Value:     3,
@@ -107,7 +114,7 @@ func TestService_Update(t *testing.T) {
 	assert.Equal(t, 1, svc.data["file_1"].Value)
 	assert.Equal(t, 5, svc.data["file_2"].Value)
 
-	err = svc.Update(metric.Entry{
+	err = svc.Update(ctx, metric.Entry{
 		Name:      "file_2",
 		TimeStamp: time.Date(2022, 7, 29, 12, 11, 23, 0, time.UTC),
 		Value:     4,
@@ -119,7 +126,7 @@ func TestService_Update(t *testing.T) {
 
 func TestNew(t *testing.T) {
 	db := &AccessorMock{
-		WriteFunc: func(m metric.Entry) error {
+		WriteFunc: func(ctx context.Context, m metric.Entry) error {
 			return nil
 		},
 	}
@@ -132,42 +139,44 @@ func TestNew(t *testing.T) {
 
 func TestService_Delete(t *testing.T) {
 	db := &AccessorMock{
-		DeleteFunc: func(m metric.Entry) error {
+		DeleteFunc: func(ctx context.Context, m metric.Entry) error {
 			return nil
 		},
-		WriteFunc: func(m metric.Entry) error {
+		WriteFunc: func(ctx context.Context, m metric.Entry) error {
 			return nil
 		},
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	svc := New(db)
 
-	err := svc.Update(metric.Entry{
+	err := svc.Update(ctx, metric.Entry{
 		Name:      "file_1",
 		TimeStamp: time.Date(2022, 7, 29, 12, 10, 23, 0, time.UTC),
 		Value:     1,
 	})
 	require.NoError(t, err)
 
-	err = svc.Update(metric.Entry{
+	err = svc.Update(ctx, metric.Entry{
 		Name:      "file_2",
 		TimeStamp: time.Date(2022, 7, 29, 12, 10, 23, 0, time.UTC),
 		Value:     2,
 	})
 	require.NoError(t, err)
 
-	err = svc.Update(metric.Entry{
+	err = svc.Update(ctx, metric.Entry{
 		Name:      "file_2",
 		TimeStamp: time.Date(2022, 7, 29, 12, 11, 23, 0, time.UTC),
 		Value:     3,
 	})
 	require.NoError(t, err)
 
-	err = svc.Delete(metric.Entry{
+	err = svc.Delete(ctx, metric.Entry{
 		Name: "file_2",
 	})
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(svc.data))
 	assert.Equal(t, 1, svc.data["file_1"].Value)
-	// assert.Equal(t, 0, len(svc.db))
 }

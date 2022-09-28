@@ -43,6 +43,8 @@ func main() {
 		},
 	}
 
+	reagg.Do(ctx)
+
 	if err := apiService.Run(); err != nil {
 		log.Printf("[ERROR] failed, %+v", err)
 	}
