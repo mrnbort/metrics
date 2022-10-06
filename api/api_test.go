@@ -101,9 +101,6 @@ func TestService_deleteMetric(t *testing.T) {
 		DeleteFunc: func(ctx context.Context, m metric.Entry) error {
 			return nil
 		},
-		UpdateFunc: func(ctx context.Context, m metric.Entry) error {
-			return nil
-		},
 	}
 	svc := &Service{Storage: strg, Auth: AuthMidlwr{
 		User:   "admin",
@@ -154,5 +151,59 @@ func TestService_deleteMetric(t *testing.T) {
 		data, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Equal(t, `{"error":"oh oh"}`+"\n", string(data))
+	}
+}
+
+func TestService_getMetricsList(t *testing.T) {
+	strg := &StorageMock{
+		GetListFunc: func(ctx context.Context) ([]string, error) {
+			return []string{"file1"}, nil
+		},
+	}
+	svc := &Service{Storage: strg}
+
+	ts := httptest.NewServer(svc.routes())
+	defer ts.Close()
+
+	client := http.Client{Timeout: time.Second}
+
+	{ // successful attempt
+		url := fmt.Sprintf("%s/get-metrics-list", ts.URL)
+		req, err := http.NewRequest("GET", url, nil)
+		require.NoError(t, err)
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		data, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Equal(t, `["file1"]`+"\n", string(data))
+		require.Equal(t, 1, len(strg.GetListCalls()))
+	}
+
+	{ // failed get list
+		strg.GetListFunc = func(ctx context.Context) ([]string, error) {
+			return nil, errors.New("oh oh")
+		}
+		req, err := http.NewRequest("GET", ts.URL+"/get-metrics-list", nil)
+		require.NoError(t, err)
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		data, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Equal(t, `{"error":"oh oh"}`+"\n", string(data))
+	}
+
+	{ // successful attempt but list is empty
+		strg.GetListFunc = func(ctx context.Context) ([]string, error) {
+			return []string{}, errors.New("no metrics in db")
+		}
+		req, err := http.NewRequest("GET", ts.URL+"/get-metrics-list", nil)
+		require.NoError(t, err)
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		data, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Equal(t, `{"error":"no metrics in db"}`+"\n", string(data))
 	}
 }

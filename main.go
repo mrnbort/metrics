@@ -39,7 +39,7 @@ func main() {
 		DbName:      "metrics-service",
 		CollName:    "metrics",
 		Buckets: []storage.ReaggrBucket{
-			{Interval: 30 * time.Minute, Age: 24 * time.Hour, SrcType: "1m", DstType: "30m"},
+			{Interval: 30 * time.Minute, Age: 24 * time.Hour, SrcType: 1 * time.Minute},
 		},
 	}
 

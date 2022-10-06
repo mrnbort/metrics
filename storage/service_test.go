@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umputun/metrics/metric"
@@ -179,4 +180,30 @@ func TestService_Delete(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(svc.data))
 	assert.Equal(t, 1, svc.data["file_1"].Value)
+}
+
+func TestService_GetList(t *testing.T) {
+	db := &AccessorMock{
+		GetMetricsListFunc: func(ctx context.Context) ([]string, error) {
+			return nil, nil
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	svc := New(db)
+
+	{ // successful attempt
+		metrics, err := svc.GetList(ctx)
+		require.NoError(t, err)
+		assert.Equal(t, 0, len(metrics))
+	}
+
+	{ // failed attempt
+		db.GetMetricsListFunc = func(ctx context.Context) ([]string, error) {
+			return nil, errors.New("blah")
+		}
+		_, err := svc.GetList(ctx)
+		assert.EqualError(t, err, "failed to find all metrics: blah")
+	}
 }

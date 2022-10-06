@@ -10,10 +10,9 @@ import (
 )
 
 type ReaggrBucket struct {
-	Interval time.Duration // 30m, 8h, 24h, 7d what interval we want to
+	Interval time.Duration // 30m, 8h, 24h, 7d what interval we want to, to know what the type of the interval is after aggr
 	Age      time.Duration // 24h, 7d, ...
-	SrcType  string        // to know what type of the interval we are looking for to aggr in db
-	DstType  string        // to know what the type of the interval is after aggr
+	SrcType  time.Duration // to know what type of the interval we are looking for to aggr in db
 }
 
 type Reaggregator struct {
@@ -52,7 +51,7 @@ func (a *Reaggregator) process(ctx context.Context, bk ReaggrBucket) error {
 		if err := cursor.Decode(&result); err != nil {
 			return fmt.Errorf("failed to decode from db: %w", err)
 		}
-		results = AggrProcess(results, result, bk.DstType, bk.Interval)
+		results = aggrProcess(results, result, bk.Interval)
 	}
 
 	// insert the aggregated metrics to db
@@ -75,26 +74,30 @@ func (a *Reaggregator) process(ctx context.Context, bk ReaggrBucket) error {
 	return nil
 }
 
-func AggrProcess(results map[string]metric.Entry, result metric.Entry, dstType string, interval time.Duration) map[string]metric.Entry {
+func aggrProcess(results map[string]metric.Entry, result metric.Entry, interval time.Duration) map[string]metric.Entry {
 	result.TimeStamp = result.TimeStamp.Round(interval)
 	v, ok := results[result.Name]
 	if !ok {
 		// metric not found
-		result.Type = dstType
+		result.Type = interval
+		result.TypeStr = interval.String()
 		results[result.Name] = result
+		return results
 	}
 
 	// metric found
 	// check if falls into the same interval; if so, update value
 	if result.TimeStamp == v.TimeStamp {
 		v.Value += result.Value
-		v.Type = dstType
+		v.Type = interval
+		v.TypeStr = interval.String()
 		results[result.Name] = v
+		return results
 	}
 
 	// the interval does not match
-	result.Type = dstType
+	result.Type = interval
+	result.TypeStr = interval.String()
 	results[result.Name] = result
-
 	return results
 }

@@ -26,6 +26,12 @@ var _ Storage = &StorageMock{}
 // 			GetAllFunc: func(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 // 				panic("mock out the GetAll method")
 // 			},
+// 			GetListFunc: func(ctx context.Context) ([]string, error) {
+// 				panic("mock out the GetList method")
+// 			},
+// 			GetOneMetricFunc: func(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+// 				panic("mock out the GetOneMetric method")
+// 			},
 // 			UpdateFunc: func(ctx context.Context, m metric.Entry) error {
 // 				panic("mock out the Update method")
 // 			},
@@ -41,6 +47,12 @@ type StorageMock struct {
 
 	// GetAllFunc mocks the GetAll method.
 	GetAllFunc func(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error)
+
+	// GetListFunc mocks the GetList method.
+	GetListFunc func(ctx context.Context) ([]string, error)
+
+	// GetOneMetricFunc mocks the GetOneMetric method.
+	GetOneMetricFunc func(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error)
 
 	// UpdateFunc mocks the Update method.
 	UpdateFunc func(ctx context.Context, m metric.Entry) error
@@ -65,6 +77,24 @@ type StorageMock struct {
 			// Interval is the interval argument value.
 			Interval time.Duration
 		}
+		// GetList holds details about calls to the GetList method.
+		GetList []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
+		// GetOneMetric holds details about calls to the GetOneMetric method.
+		GetOneMetric []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Name is the name argument value.
+			Name string
+			// From is the from argument value.
+			From time.Time
+			// To is the to argument value.
+			To time.Time
+			// Interval is the interval argument value.
+			Interval time.Duration
+		}
 		// Update holds details about calls to the Update method.
 		Update []struct {
 			// Ctx is the ctx argument value.
@@ -73,9 +103,11 @@ type StorageMock struct {
 			M metric.Entry
 		}
 	}
-	lockDelete sync.RWMutex
-	lockGetAll sync.RWMutex
-	lockUpdate sync.RWMutex
+	lockDelete       sync.RWMutex
+	lockGetAll       sync.RWMutex
+	lockGetList      sync.RWMutex
+	lockGetOneMetric sync.RWMutex
+	lockUpdate       sync.RWMutex
 }
 
 // Delete calls DeleteFunc.
@@ -153,6 +185,84 @@ func (mock *StorageMock) GetAllCalls() []struct {
 	mock.lockGetAll.RLock()
 	calls = mock.calls.GetAll
 	mock.lockGetAll.RUnlock()
+	return calls
+}
+
+// GetList calls GetListFunc.
+func (mock *StorageMock) GetList(ctx context.Context) ([]string, error) {
+	if mock.GetListFunc == nil {
+		panic("StorageMock.GetListFunc: method is nil but Storage.GetList was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockGetList.Lock()
+	mock.calls.GetList = append(mock.calls.GetList, callInfo)
+	mock.lockGetList.Unlock()
+	return mock.GetListFunc(ctx)
+}
+
+// GetListCalls gets all the calls that were made to GetList.
+// Check the length with:
+//     len(mockedStorage.GetListCalls())
+func (mock *StorageMock) GetListCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockGetList.RLock()
+	calls = mock.calls.GetList
+	mock.lockGetList.RUnlock()
+	return calls
+}
+
+// GetOneMetric calls GetOneMetricFunc.
+func (mock *StorageMock) GetOneMetric(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+	if mock.GetOneMetricFunc == nil {
+		panic("StorageMock.GetOneMetricFunc: method is nil but Storage.GetOneMetric was just called")
+	}
+	callInfo := struct {
+		Ctx      context.Context
+		Name     string
+		From     time.Time
+		To       time.Time
+		Interval time.Duration
+	}{
+		Ctx:      ctx,
+		Name:     name,
+		From:     from,
+		To:       to,
+		Interval: interval,
+	}
+	mock.lockGetOneMetric.Lock()
+	mock.calls.GetOneMetric = append(mock.calls.GetOneMetric, callInfo)
+	mock.lockGetOneMetric.Unlock()
+	return mock.GetOneMetricFunc(ctx, name, from, to, interval)
+}
+
+// GetOneMetricCalls gets all the calls that were made to GetOneMetric.
+// Check the length with:
+//     len(mockedStorage.GetOneMetricCalls())
+func (mock *StorageMock) GetOneMetricCalls() []struct {
+	Ctx      context.Context
+	Name     string
+	From     time.Time
+	To       time.Time
+	Interval time.Duration
+} {
+	var calls []struct {
+		Ctx      context.Context
+		Name     string
+		From     time.Time
+		To       time.Time
+		Interval time.Duration
+	}
+	mock.lockGetOneMetric.RLock()
+	calls = mock.calls.GetOneMetric
+	mock.lockGetOneMetric.RUnlock()
 	return calls
 }
 

@@ -26,6 +26,12 @@ var _ Accessor = &AccessorMock{}
 // 			FindAllFunc: func(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 // 				panic("mock out the FindAll method")
 // 			},
+// 			FindOneMetricFunc: func(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+// 				panic("mock out the FindOneMetric method")
+// 			},
+// 			GetMetricsListFunc: func(ctx context.Context) ([]string, error) {
+// 				panic("mock out the GetMetricsList method")
+// 			},
 // 			WriteFunc: func(ctx context.Context, m metric.Entry) error {
 // 				panic("mock out the Write method")
 // 			},
@@ -41,6 +47,12 @@ type AccessorMock struct {
 
 	// FindAllFunc mocks the FindAll method.
 	FindAllFunc func(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error)
+
+	// FindOneMetricFunc mocks the FindOneMetric method.
+	FindOneMetricFunc func(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error)
+
+	// GetMetricsListFunc mocks the GetMetricsList method.
+	GetMetricsListFunc func(ctx context.Context) ([]string, error)
 
 	// WriteFunc mocks the Write method.
 	WriteFunc func(ctx context.Context, m metric.Entry) error
@@ -65,6 +77,24 @@ type AccessorMock struct {
 			// Interval is the interval argument value.
 			Interval time.Duration
 		}
+		// FindOneMetric holds details about calls to the FindOneMetric method.
+		FindOneMetric []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// Name is the name argument value.
+			Name string
+			// From is the from argument value.
+			From time.Time
+			// To is the to argument value.
+			To time.Time
+			// Interval is the interval argument value.
+			Interval time.Duration
+		}
+		// GetMetricsList holds details about calls to the GetMetricsList method.
+		GetMetricsList []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+		}
 		// Write holds details about calls to the Write method.
 		Write []struct {
 			// Ctx is the ctx argument value.
@@ -73,9 +103,11 @@ type AccessorMock struct {
 			M metric.Entry
 		}
 	}
-	lockDelete  sync.RWMutex
-	lockFindAll sync.RWMutex
-	lockWrite   sync.RWMutex
+	lockDelete         sync.RWMutex
+	lockFindAll        sync.RWMutex
+	lockFindOneMetric  sync.RWMutex
+	lockGetMetricsList sync.RWMutex
+	lockWrite          sync.RWMutex
 }
 
 // Delete calls DeleteFunc.
@@ -153,6 +185,84 @@ func (mock *AccessorMock) FindAllCalls() []struct {
 	mock.lockFindAll.RLock()
 	calls = mock.calls.FindAll
 	mock.lockFindAll.RUnlock()
+	return calls
+}
+
+// FindOneMetric calls FindOneMetricFunc.
+func (mock *AccessorMock) FindOneMetric(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+	if mock.FindOneMetricFunc == nil {
+		panic("AccessorMock.FindOneMetricFunc: method is nil but Accessor.FindOneMetric was just called")
+	}
+	callInfo := struct {
+		Ctx      context.Context
+		Name     string
+		From     time.Time
+		To       time.Time
+		Interval time.Duration
+	}{
+		Ctx:      ctx,
+		Name:     name,
+		From:     from,
+		To:       to,
+		Interval: interval,
+	}
+	mock.lockFindOneMetric.Lock()
+	mock.calls.FindOneMetric = append(mock.calls.FindOneMetric, callInfo)
+	mock.lockFindOneMetric.Unlock()
+	return mock.FindOneMetricFunc(ctx, name, from, to, interval)
+}
+
+// FindOneMetricCalls gets all the calls that were made to FindOneMetric.
+// Check the length with:
+//     len(mockedAccessor.FindOneMetricCalls())
+func (mock *AccessorMock) FindOneMetricCalls() []struct {
+	Ctx      context.Context
+	Name     string
+	From     time.Time
+	To       time.Time
+	Interval time.Duration
+} {
+	var calls []struct {
+		Ctx      context.Context
+		Name     string
+		From     time.Time
+		To       time.Time
+		Interval time.Duration
+	}
+	mock.lockFindOneMetric.RLock()
+	calls = mock.calls.FindOneMetric
+	mock.lockFindOneMetric.RUnlock()
+	return calls
+}
+
+// GetMetricsList calls GetMetricsListFunc.
+func (mock *AccessorMock) GetMetricsList(ctx context.Context) ([]string, error) {
+	if mock.GetMetricsListFunc == nil {
+		panic("AccessorMock.GetMetricsListFunc: method is nil but Accessor.GetMetricsList was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+	}{
+		Ctx: ctx,
+	}
+	mock.lockGetMetricsList.Lock()
+	mock.calls.GetMetricsList = append(mock.calls.GetMetricsList, callInfo)
+	mock.lockGetMetricsList.Unlock()
+	return mock.GetMetricsListFunc(ctx)
+}
+
+// GetMetricsListCalls gets all the calls that were made to GetMetricsList.
+// Check the length with:
+//     len(mockedAccessor.GetMetricsListCalls())
+func (mock *AccessorMock) GetMetricsListCalls() []struct {
+	Ctx context.Context
+} {
+	var calls []struct {
+		Ctx context.Context
+	}
+	mock.lockGetMetricsList.RLock()
+	calls = mock.calls.GetMetricsList
+	mock.lockGetMetricsList.RUnlock()
 	return calls
 }
 

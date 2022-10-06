@@ -60,18 +60,6 @@ func (s Service) routes() chi.Router {
 		r.With(limiter(10)).Delete("/metric", s.deleteMetric)
 	})
 
-	//mux.Route("/protected-post", func(mux chi.Router) {
-	//	mux.Use(s.Auth.Handler)
-	//	mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(1000, nil)))
-	//	mux.Post("/metric", s.postMetric)
-	//})
-	//
-	//mux.Route("/protected-delete", func(mux chi.Router) {
-	//	mux.Use(s.Auth.Handler)
-	//	mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(10, nil)))
-	//	mux.Delete("/metric", s.deleteMetric)
-	//})
-
 	mux.Get("/get-metrics-list", s.getMetricsList)
 	mux.Get("/get-metric?name={name}&from={from}&to={to}&interval={int}", s.getMetric)
 	mux.Get("/get-metrics?from={from}&to={to}&interval={int}", s.getMetrics)
@@ -131,6 +119,7 @@ func (s Service) getMetricsList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.JSON(w, r, result)
+
 }
 
 // GET /get-metric?name={name}&from={from}&to={to}&interval={int}

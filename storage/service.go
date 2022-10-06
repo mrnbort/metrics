@@ -42,7 +42,8 @@ func (s *Service) Update(ctx context.Context, m metric.Entry) error {
 	if !ok {
 		// metric not found
 		m.MinSinceMidnight = s.getMinSinceMidnight(m.TimeStamp)
-		m.Type = "1m"
+		m.Type = 1 * time.Minute
+		m.TypeStr = "1m"
 		s.data[m.Name] = m
 		return nil
 	}
@@ -60,7 +61,8 @@ func (s *Service) Update(ctx context.Context, m metric.Entry) error {
 	}
 
 	m.MinSinceMidnight = s.getMinSinceMidnight(m.TimeStamp)
-	m.Type = "1m"
+	m.Type = 1 * time.Minute
+	m.TypeStr = "1m"
 	s.data[m.Name] = m // set new metric to hash
 	return nil
 }
@@ -91,7 +93,7 @@ func (s *Service) GetList(ctx context.Context) ([]string, error) {
 func (s *Service) GetOneMetric(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 	metrics, err := s.db.FindOneMetric(ctx, name, from, to, interval)
 	if err != nil {
-		return metrics, fmt.Errorf("failed to find all metrics: %w", err)
+		return metrics, fmt.Errorf("failed to find %v metrics: %w", name, err)
 	}
 	return metrics, nil
 }
