@@ -37,7 +37,6 @@ func New(db Accessor) *Service {
 // Update adds or updates a metric to the in-memory storage and
 // calls Write to add the metric to the db
 func (s *Service) Update(ctx context.Context, m metric.Entry) error {
-
 	v, ok := s.data[m.Name]
 	if !ok {
 		// metric not found

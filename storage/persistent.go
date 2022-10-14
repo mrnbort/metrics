@@ -19,13 +19,14 @@ type DBAccessor struct {
 	dbName, collName string
 }
 
-//
+// NewAccessor returns access to db
 func NewAccessor(db *mongo.Client, dbName, collName string) *DBAccessor {
 	return &DBAccessor{db: db, dbName: dbName, collName: collName}
 }
 
 // Write inserts entries to db
 func (d *DBAccessor) Write(ctx context.Context, m metric.Entry) error {
+	m.TimeStamp = roundUpTime(m.TimeStamp, 1*time.Minute)
 	collection := d.db.Database(d.dbName).Collection(d.collName)
 	m.Type = 1 * time.Minute
 	m.TypeStr = "1m"
@@ -39,8 +40,8 @@ func (d *DBAccessor) Write(ctx context.Context, m metric.Entry) error {
 // Delete removes entries from db
 func (d *DBAccessor) Delete(ctx context.Context, m metric.Entry) error {
 	collection := d.db.Database(d.dbName).Collection(d.collName)
-	if _, err := collection.DeleteMany(ctx, m); err != nil {
-		return fmt.Errorf("failed to delete %v: %w", m, err)
+	if _, err := collection.DeleteMany(ctx, bson.D{{"name", m.Name}}); err != nil {
+		return fmt.Errorf("failed to delete %v: %w", m.Name, err)
 	}
 	fmt.Printf("deleted metric %v\n", m.Name)
 	return nil
@@ -65,7 +66,7 @@ func (d *DBAccessor) GetMetricsList(ctx context.Context) ([]string, error) {
 // FindOneMetric gets the values for the required metric, timeframe and interval from db
 func (d *DBAccessor) FindOneMetric(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 	// 1. everything is matching
-	// 2. remainder = 0: can create from existing smaller interval and it exists in the time range
+	// 2. remainder = 0: can create from existing smaller interval, and it exists in the time range
 	// 3. can only create from 1 minute interval
 	// 4. can approximate
 	// 5. only error cannot even approximate
@@ -171,12 +172,14 @@ func (d *DBAccessor) EverythingIsMatching(ctx context.Context, name string, from
 			"$lte": to,
 		},
 	})
-	if err != nil && err != mongo.ErrNoDocuments {
+	if err != nil {
 		return nil, err
 	}
-	if err != nil && err == mongo.ErrNoDocuments {
-		return nil, nil
+
+	if cursor.RemainingBatchLength() == 0 {
+		return nil, fmt.Errorf("failed to find matching docs in db")
 	}
+
 	if err = cursor.All(ctx, &results); err != nil {
 		return nil, fmt.Errorf("failed to get a list of all returned documents for %v metric: %w", name, err)
 	}
@@ -190,27 +193,20 @@ func (d *DBAccessor) AggregateSmallerInterval(ctx context.Context, name string, 
 	collection := d.db.Database(d.dbName).Collection(d.collName)
 
 	var intervalList []time.Duration
-	list, err := collection.Distinct(ctx, "type", bson.M{
-		"name": name,
-		"type": bson.M{
-			"$lt": interval,
-			//"$gt": 1 * time.Minute,
-		},
-		"time_stamp": bson.M{
-			"$gte": from,
-			"$lte": to,
-		},
-	},
-	)
+	list, err := collection.Distinct(ctx, "type", bson.D{{"name", name}, {"type", bson.D{{"$lt", interval}}}, {"time_stamp", bson.D{{"$gte", from}, {"$lte", to}}}})
+
+	if len(list) == 0 {
+		return nil, fmt.Errorf("no metric data for this timeframe: %v - %v", from, to)
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	for _, l := range list {
-		intervalList = append(intervalList, l.(time.Duration))
+		intervalList = append(intervalList, time.Duration(l.(int64)))
 	}
-	if len(intervalList) == 0 {
-		return nil, fmt.Errorf("no mertic data for this timeframe: %v - %v", from, to)
-	}
+
 	// sort the available intervals (descending)
 	sort.Slice(intervalList, func(i, j int) bool { return intervalList[i] > intervalList[j] })
 
@@ -225,7 +221,7 @@ func (d *DBAccessor) AggregateSmallerInterval(ctx context.Context, name string, 
 	}
 
 	if sInterval == 0 {
-		return nil, fmt.Errorf("no interval data to aggregate for this timeframe: %v - %v", from, to)
+		return nil, fmt.Errorf("no interval that can be aggregated")
 	}
 
 	cursor, err := collection.Find(ctx, bson.M{
@@ -256,6 +252,8 @@ func (d *DBAccessor) AggregateSmallerInterval(ctx context.Context, name string, 
 		results = append(results, v)
 	}
 
+	//sort.Slice(results, func(i, j int) bool { return results[i].TimeStamp < results[j].TimeStamp })
+
 	return results, nil
 }
 
@@ -265,6 +263,7 @@ func (d *DBAccessor) ApproximateInterval(ctx context.Context, name string, from,
 
 	collection := d.db.Database(d.dbName).Collection(d.collName)
 
+	// to find interval within 25% of requested
 	lowerInterval := interval * 3 / 4
 	upperInterval := interval * 5 / 4
 
@@ -279,14 +278,26 @@ func (d *DBAccessor) ApproximateInterval(ctx context.Context, name string, from,
 			"$lte": to,
 		},
 	})
-	if err != nil && err != mongo.ErrNoDocuments {
+	if err != nil {
 		return nil, err
 	}
-	if err != nil && err == mongo.ErrNoDocuments {
-		return nil, nil
+	if cursor.RemainingBatchLength() == 0 {
+		return nil, fmt.Errorf("failed to find matching docs in db")
 	}
+
 	if err = cursor.All(ctx, &results); err != nil {
 		return nil, fmt.Errorf("failed to get a list of all returned documents for %v metric: %w", name, err)
 	}
 	return results, nil
+}
+
+func roundUpTime(t time.Time, roundOn time.Duration) time.Time {
+	var tr time.Time
+	tr = t.Round(roundOn)
+
+	if tr.Before(t) {
+		tr = tr.Add(roundOn)
+	}
+
+	return tr
 }

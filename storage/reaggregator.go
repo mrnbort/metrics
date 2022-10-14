@@ -39,10 +39,15 @@ func (a *Reaggregator) process(ctx context.Context, bk ReaggrBucket) error {
 		"time_stamp": bson.M{
 			"$lte": time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Add(-1 * bk.Age)},
 	})
-	if err != nil {
-		return fmt.Errorf("failed to find matching docs in db: %w", err)
+
+	if cursor.RemainingBatchLength() == 0 {
+		return fmt.Errorf("failed to find matching docs in db")
 	}
-	defer cursor.Close(ctx) // ?????
+
+	if err != nil {
+		return fmt.Errorf("error reading from the db: %w", err)
+	}
+	defer cursor.Close(ctx)
 
 	results := make(map[string]metric.Entry)
 
@@ -75,29 +80,21 @@ func (a *Reaggregator) process(ctx context.Context, bk ReaggrBucket) error {
 }
 
 func aggrProcess(results map[string]metric.Entry, result metric.Entry, interval time.Duration) map[string]metric.Entry {
-	result.TimeStamp = result.TimeStamp.Round(interval)
-	v, ok := results[result.Name]
+	result.TimeStamp = roundUpTime(result.TimeStamp, interval)
+	dictKey := result.Name + "+" + result.TimeStamp.String()
+	v, ok := results[dictKey]
 	if !ok {
 		// metric not found
 		result.Type = interval
 		result.TypeStr = interval.String()
-		results[result.Name] = result
+		results[dictKey] = result
 		return results
 	}
 
 	// metric found
-	// check if falls into the same interval; if so, update value
-	if result.TimeStamp == v.TimeStamp {
-		v.Value += result.Value
-		v.Type = interval
-		v.TypeStr = interval.String()
-		results[result.Name] = v
-		return results
-	}
-
-	// the interval does not match
-	result.Type = interval
-	result.TypeStr = interval.String()
-	results[result.Name] = result
+	v.Value += result.Value
+	v.Type = interval
+	v.TypeStr = interval.String()
+	results[dictKey] = v
 	return results
 }

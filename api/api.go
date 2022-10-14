@@ -115,6 +115,7 @@ func (s Service) getMetricsList(w http.ResponseWriter, r *http.Request) {
 
 	if len(result) == 0 {
 		// no metrics in db
+		render.Status(r, http.StatusOK)
 		render.JSON(w, r, JSON{"error": "no metrics in db"})
 	}
 

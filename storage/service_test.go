@@ -136,8 +136,6 @@ func TestNew(t *testing.T) {
 	assert.Equal(t, 0, len(svc.data))
 }
 
-// Tests, interface, api
-
 func TestService_Delete(t *testing.T) {
 	db := &AccessorMock{
 		DeleteFunc: func(ctx context.Context, m metric.Entry) error {
