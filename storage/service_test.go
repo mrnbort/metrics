@@ -69,13 +69,13 @@ func TestService_doCleanup(t *testing.T) {
 	require.NoError(t, err)
 
 	//svc.data check
-	assert.Equal(t, 18, svc.data["file_1"].Value)
+	assert.Equal(t, 18, svc.staging.data["file_1"].Value)
 
 	err = svc.doCleanup(ctx)
 	require.NoError(t, err)
 
 	//svc.data check, some gone
-	assert.Equal(t, 0, len(svc.data))
+	assert.Equal(t, 0, len(svc.staging.data))
 
 }
 
@@ -112,8 +112,8 @@ func TestService_Update(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, 1, svc.data["file_1"].Value)
-	assert.Equal(t, 5, svc.data["file_2"].Value)
+	assert.Equal(t, 1, svc.staging.data["file_1"].Value)
+	assert.Equal(t, 5, svc.staging.data["file_2"].Value)
 
 	err = svc.Update(ctx, metric.Entry{
 		Name:      "file_2",
@@ -121,8 +121,8 @@ func TestService_Update(t *testing.T) {
 		Value:     4,
 	})
 	require.NoError(t, err)
-	assert.Equal(t, 1, svc.data["file_1"].Value)
-	assert.Equal(t, 4, svc.data["file_2"].Value)
+	assert.Equal(t, 1, svc.staging.data["file_1"].Value)
+	assert.Equal(t, 4, svc.staging.data["file_2"].Value)
 }
 
 func TestNew(t *testing.T) {
@@ -133,7 +133,7 @@ func TestNew(t *testing.T) {
 	}
 
 	svc := New(db)
-	assert.Equal(t, 0, len(svc.data))
+	assert.Equal(t, 0, len(svc.staging.data))
 }
 
 func TestService_Delete(t *testing.T) {
@@ -176,8 +176,8 @@ func TestService_Delete(t *testing.T) {
 		Name: "file_2",
 	})
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(svc.data))
-	assert.Equal(t, 1, svc.data["file_1"].Value)
+	assert.Equal(t, 1, len(svc.staging.data))
+	assert.Equal(t, 1, svc.staging.data["file_1"].Value)
 }
 
 func TestService_GetList(t *testing.T) {

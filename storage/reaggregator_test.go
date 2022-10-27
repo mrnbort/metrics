@@ -26,7 +26,7 @@ func TestReaggregator_Do(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	acc := NewAccessor(dbConn, "test", "metrics")
+	acc := NewAccessor(dbConn, "test", "metrics", 0.25)
 
 	err = acc.Write(ctx, metric.Entry{
 		Name:      "file_2",
@@ -92,7 +92,7 @@ func TestReaggregator_Do(t *testing.T) {
 		DbName:      "test",
 		CollName:    "metrics",
 		Buckets: []ReaggrBucket{
-			{Interval: 30 * time.Minute, Age: 120 * time.Hour, SrcType: 3 * time.Minute},
+			{Interval: 30 * time.Minute, Age: 1200 * time.Hour, SrcType: 3 * time.Minute},
 		},
 	}
 

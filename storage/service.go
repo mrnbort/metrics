@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/umputun/metrics/metric"
 	"log"
+	"sync"
 	"time"
 )
 
@@ -12,8 +13,12 @@ import (
 
 // Service allows access to db and memory
 type Service struct {
-	db   Accessor
-	data map[string]metric.Entry
+	db Accessor
+
+	staging struct {
+		sync.Mutex
+		data map[string]metric.Entry
+	}
 }
 
 // Accessor provides access to the db functions
@@ -28,29 +33,32 @@ type Accessor interface {
 // New initiates and returns db and in-memory data
 func New(db Accessor) *Service {
 	result := &Service{
-		data: make(map[string]metric.Entry),
-		db:   db,
+		db: db,
 	}
+	result.staging.data = make(map[string]metric.Entry)
 	return result
 }
 
 // Update adds or updates a metric to the in-memory storage and
 // calls Write to add the metric to the db
 func (s *Service) Update(ctx context.Context, m metric.Entry) error {
-	v, ok := s.data[m.Name]
+	s.staging.Lock()
+	defer s.staging.Unlock()
+
+	v, ok := s.staging.data[m.Name]
 	if !ok {
 		// metric not found
 		m.MinSinceMidnight = s.getMinSinceMidnight(m.TimeStamp)
 		m.Type = 1 * time.Minute
 		m.TypeStr = "1m"
-		s.data[m.Name] = m
+		s.staging.data[m.Name] = m
 		return nil
 	}
 
 	mins := s.getMinSinceMidnight(m.TimeStamp)
 	if mins == v.MinSinceMidnight { // matched minute, update metric value
 		v.Value += m.Value
-		s.data[m.Name] = v
+		s.staging.data[m.Name] = v
 		return nil
 	}
 
@@ -62,17 +70,22 @@ func (s *Service) Update(ctx context.Context, m metric.Entry) error {
 	m.MinSinceMidnight = s.getMinSinceMidnight(m.TimeStamp)
 	m.Type = 1 * time.Minute
 	m.TypeStr = "1m"
-	s.data[m.Name] = m // set new metric to hash
+	s.staging.data[m.Name] = m // set new metric to hash
 	return nil
 }
 
 // Delete removes the metric from in-memory storage and db
 func (s *Service) Delete(ctx context.Context, m metric.Entry) error {
-	_, ok := s.data[m.Name]
+	s.staging.Lock()
+
+	_, ok := s.staging.data[m.Name]
 	if ok {
 		// metric found in data
-		delete(s.data, m.Name)
+		delete(s.staging.data, m.Name)
 	}
+
+	s.staging.Unlock()
+
 	if err := s.db.Delete(ctx, m); err != nil {
 		return fmt.Errorf("failed to delete metric %v: %w", m, err)
 	}
@@ -96,10 +109,6 @@ func (s *Service) GetOneMetric(ctx context.Context, name string, from, to time.T
 	}
 	return metrics, nil
 }
-
-//func (s *Service) Find() (metric.Entry, error) {
-//
-//}
 
 // GetAll gets all entries for the specified timeframe and interval
 func (s *Service) GetAll(ctx context.Context, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
@@ -135,13 +144,16 @@ func (s *Service) ActivateCleanup(ctx context.Context, duration time.Duration) {
 
 // doCleanup cleans up the in-memory data by moving entries to db
 func (s *Service) doCleanup(ctx context.Context) error {
-	if len(s.data) <= 0 {
+	s.staging.Lock()
+	defer s.staging.Unlock()
+
+	if len(s.staging.data) <= 0 {
 		return nil
 	}
 
 	nowMins := s.getMinSinceMidnight(time.Now())
 
-	for k, v := range s.data {
+	for k, v := range s.staging.data {
 		if nowMins == v.MinSinceMidnight {
 			continue
 		}
@@ -149,7 +161,7 @@ func (s *Service) doCleanup(ctx context.Context) error {
 		if err := s.db.Write(ctx, v); err != nil {
 			return fmt.Errorf("failed to add expired minute %v: %w", v, err)
 		}
-		delete(s.data, k)
+		delete(s.staging.data, k)
 	}
 
 	return nil

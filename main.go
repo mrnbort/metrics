@@ -23,7 +23,7 @@ func main() {
 		panic(err)
 	}
 
-	db := storage.NewAccessor(dbConn, "metrics-service", "metrics")
+	db := storage.NewAccessor(dbConn, "metrics-service", "metrics", 0.25)
 	svc := storage.New(db)
 	svc.ActivateCleanup(ctx, time.Minute) // async, exit right away
 

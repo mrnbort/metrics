@@ -49,7 +49,7 @@ func (a *Reaggregator) process(ctx context.Context, bk ReaggrBucket) error {
 	}
 	defer cursor.Close(ctx)
 
-	results := make(map[string]metric.Entry)
+	var results []metric.Entry
 
 	for cursor.Next(ctx) {
 		var result metric.Entry
@@ -79,22 +79,35 @@ func (a *Reaggregator) process(ctx context.Context, bk ReaggrBucket) error {
 	return nil
 }
 
-func aggrProcess(results map[string]metric.Entry, result metric.Entry, interval time.Duration) map[string]metric.Entry {
+func aggrProcess(results []metric.Entry, result metric.Entry, interval time.Duration) []metric.Entry {
+	dict := make(map[string]metric.Entry)
 	result.TimeStamp = roundUpTime(result.TimeStamp, interval)
+	for _, v := range results {
+		dictKey := v.Name + "+" + v.TimeStamp.String()
+		dict[dictKey] = v
+	}
+	var finalResults []metric.Entry
+
 	dictKey := result.Name + "+" + result.TimeStamp.String()
-	v, ok := results[dictKey]
+	v, ok := dict[dictKey]
 	if !ok {
 		// metric not found
 		result.Type = interval
 		result.TypeStr = interval.String()
-		results[dictKey] = result
-		return results
+		dict[dictKey] = result
+		for _, v := range dict {
+			finalResults = append(finalResults, v)
+		}
+		return finalResults
 	}
 
 	// metric found
 	v.Value += result.Value
 	v.Type = interval
 	v.TypeStr = interval.String()
-	results[dictKey] = v
-	return results
+	dict[dictKey] = v
+	for _, v := range dict {
+		finalResults = append(finalResults, v)
+	}
+	return finalResults
 }
