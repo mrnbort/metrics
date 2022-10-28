@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umputun/metrics/metric"
@@ -203,5 +204,71 @@ func TestService_GetList(t *testing.T) {
 		}
 		_, err := svc.GetList(ctx)
 		assert.EqualError(t, err, "failed to find all metrics: blah")
+	}
+}
+
+func TestService_GetOneMetric(t *testing.T) {
+	db := &AccessorMock{
+		FindOneMetricFunc: func(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+			return nil, nil
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	svc := New(db)
+
+	{ // successful attempt
+		metrics, err := svc.GetOneMetric(ctx, "file_1",
+			time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
+			time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
+			2*time.Minute)
+		require.NoError(t, err)
+		assert.Equal(t, 0, len(metrics))
+	}
+
+	{ // failed attempt
+		db.FindOneMetricFunc = func(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+			return nil, errors.New("blah")
+		}
+		_, err := svc.GetOneMetric(ctx, "file_1",
+			time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
+			time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
+			2*time.Minute)
+		assert.EqualError(t, err, "failed to find file_1 metric: blah")
+	}
+}
+
+func TestService_GetAll(t *testing.T) {
+	db := &AccessorMock{
+		FindAllFunc: func(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+			return nil, nil
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	svc := New(db)
+
+	{ // successful attempt
+		metrics, err := svc.GetAll(ctx,
+			time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
+			time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
+			2*time.Minute)
+		require.NoError(t, err)
+		assert.Equal(t, 0, len(metrics))
+	}
+
+	{ // failed attempt
+		db.FindAllFunc = func(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+			return nil, errors.New("blah")
+		}
+		_, err := svc.GetAll(ctx,
+			time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
+			time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
+			2*time.Minute)
+		assert.EqualError(t, err, fmt.Sprintf("failed to find all metrics from %v to %v: blah",
+			time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
+			time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC)))
 	}
 }

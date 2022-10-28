@@ -207,3 +207,61 @@ func TestService_getMetricsList(t *testing.T) {
 		assert.Equal(t, `{"error":"no metrics in db"}`+"\n", string(data))
 	}
 }
+
+func TestService_getMetric(t *testing.T) {
+	strg := &StorageMock{
+		GetOneMetricFunc: func(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+			return []metric.Entry{
+				{
+					Name:      "file_1",
+					TimeStamp: time.Date(2022, 10, 11, 2, 21, 23, 0, time.UTC),
+					Value:     1,
+				},
+			}, nil
+		},
+	}
+	svc := &Service{Storage: strg}
+
+	ts := httptest.NewServer(svc.routes())
+	defer ts.Close()
+
+	client := http.Client{Timeout: time.Second}
+
+	{ // successful attempt
+		tmFrom := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
+		tmTo := tmFrom.Add(24 * time.Hour)
+		intervalRaw := 30 * time.Minute
+		interval := intervalRaw.String()
+		req, err := http.NewRequest("GET", ts.URL+"/get-metric",
+			strings.NewReader(fmt.Sprintf(`{"name": "test", "from": "%s", "to": "%s", "interval": "%s"}`,
+				tmFrom.Format(time.RFC3339), tmTo.Format(time.RFC3339), interval)))
+		require.NoError(t, err)
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		data, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		assert.Equal(t, `{"status":"ok"}`+"\n", string(data))
+
+		require.Equal(t, 1, len(strg.UpdateCalls()))
+		assert.Equal(t, "test", strg.UpdateCalls()[0].M.Name)
+		assert.Equal(t, 123, strg.UpdateCalls()[0].M.Value)
+	}
+
+	//tmFrom := time.Now().Add(-24 * time.Hour)
+	//tmTo := time.Now()
+	//interval := 30 * time.Minute
+	//
+	//url := fmt.Sprintf("%s/get-metric?name=test&from=%v&to=%v&interval=%v", ts.URL, tmFrom, tmTo, interval)
+	//req, err := http.NewRequest("GET", url, nil)
+	//require.NoError(t, err)
+	//resp, err := client.Do(req)
+	//require.NoError(t, err)
+	//assert.Equal(t, http.StatusOK, resp.StatusCode)
+	//data, err := io.ReadAll(resp.Body)
+	//require.NoError(t, err)
+	//assert.Equal(t, `{"status":"ok"}`+"\n", string(data))
+	//
+	//require.Equal(t, 1, len(strg.DeleteCalls()))
+	//assert.Equal(t, "test", strg.DeleteCalls()[0].M.Name)
+}

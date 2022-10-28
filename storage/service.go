@@ -105,7 +105,7 @@ func (s *Service) GetList(ctx context.Context) ([]string, error) {
 func (s *Service) GetOneMetric(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 	metrics, err := s.db.FindOneMetric(ctx, name, from, to, interval)
 	if err != nil {
-		return metrics, fmt.Errorf("failed to find %v metrics: %w", name, err)
+		return metrics, fmt.Errorf("failed to find %v metric: %w", name, err)
 	}
 	return metrics, nil
 }

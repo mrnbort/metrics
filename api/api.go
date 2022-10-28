@@ -61,7 +61,8 @@ func (s Service) routes() chi.Router {
 	})
 
 	mux.Get("/get-metrics-list", s.getMetricsList)
-	mux.Get("/get-metric?name={name}&from={from}&to={to}&interval={int}", s.getMetric)
+	// mux.Get("/get-metric?name={name}&from={from}&to={to}&interval={int}", s.getMetric)
+	mux.Get("/get-metric", s.getMetric)
 	mux.Get("/get-metrics?from={from}&to={to}&interval={int}", s.getMetrics)
 
 	return mux
@@ -118,19 +119,80 @@ func (s Service) getMetricsList(w http.ResponseWriter, r *http.Request) {
 		render.Status(r, http.StatusOK)
 		render.JSON(w, r, JSON{"error": "no metrics in db"})
 	}
-
 	render.JSON(w, r, result)
-
 }
 
-// GET /get-metric?name={name}&from={from}&to={to}&interval={int}
+// GET /get-metric
 func (s Service) getMetric(w http.ResponseWriter, r *http.Request) {
-	//ctx := r.Context()
+	request := metric.Lookup{}
+	ctx := r.Context()
 
-	//result, err := s.Storage.GetOneMetric(ctx)
+	if err := render.DecodeJSON(r.Body, &request); err != nil {
+		log.Printf("[WARN] can't bind request %+v: %v", request, err)
+		render.Status(r, http.StatusBadRequest)
+		render.JSON(w, r, JSON{"error": err.Error()})
+		return
+	}
+	interval, err := time.ParseDuration(request.Interval)
+
+	result, err := s.Storage.GetOneMetric(ctx, request.Name, request.From, request.To, interval)
+	if err != nil {
+		log.Printf("[WARN] can't get metric data: %v", err)
+		render.Status(r, http.StatusInternalServerError)
+		render.JSON(w, r, JSON{"error": err.Error()})
+		return
+	}
+
+	if len(result) == 0 {
+		// no metric in db
+		render.Status(r, http.StatusOK)
+		render.JSON(w, r, JSON{"error": "no metric in db"})
+	}
+	render.JSON(w, r, result)
 }
 
-// GET /get-metrics?from={from}&to={to}&interval={int}
+// GET /get-metrics
 func (s Service) getMetrics(w http.ResponseWriter, r *http.Request) {
+	rawFrom := r.URL.Query().Get("from")
+	rawTo := r.URL.Query().Get("to")
+	layout := "2022-10-11T02:15:00.000+00:00"
 
+	from, err := time.Parse(layout, rawFrom)
+	if err != nil {
+		log.Printf("[WARN] can't parse the from date: %v", err)
+		render.Status(r, http.StatusInternalServerError)
+		render.JSON(w, r, JSON{"error": err.Error()})
+		return
+	}
+	to, err := time.Parse(layout, rawTo)
+	if err != nil {
+		log.Printf("[WARN] can't parse the to date: %v", err)
+		render.Status(r, http.StatusInternalServerError)
+		render.JSON(w, r, JSON{"error": err.Error()})
+		return
+	}
+
+	interval, err := time.ParseDuration(r.URL.Query().Get("interval"))
+	if err != nil {
+		log.Printf("[WARN] can't parse the duration: %v", err)
+		render.Status(r, http.StatusInternalServerError)
+		render.JSON(w, r, JSON{"error": err.Error()})
+		return
+	}
+	ctx := r.Context()
+
+	result, err := s.Storage.GetAll(ctx, from, to, interval)
+	if err != nil {
+		log.Printf("[WARN] can't get metric data: %v", err)
+		render.Status(r, http.StatusInternalServerError)
+		render.JSON(w, r, JSON{"error": err.Error()})
+		return
+	}
+
+	if len(result) == 0 {
+		// no metrics in db
+		render.Status(r, http.StatusOK)
+		render.JSON(w, r, JSON{"error": "no metrics in db"})
+	}
+	render.JSON(w, r, result)
 }
