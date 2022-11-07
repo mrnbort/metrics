@@ -314,7 +314,7 @@ func TestDBAccessor_aggregateSmallerInterval_NoZeroRemainder(t *testing.T) {
 
 // successful test to make sure other intervals are left not aggregated
 func TestDBAccessor_aggregateSmallerInterval_IntervalCheck(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 300000*time.Hour)
 	defer cancel()
 	dbConn, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	require.NoError(t, err)

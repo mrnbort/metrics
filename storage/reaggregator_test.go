@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umputun/metrics/metric"
@@ -92,11 +91,11 @@ func TestReaggregator_Do(t *testing.T) {
 		DbName:      "test",
 		CollName:    "metrics",
 		Buckets: []ReaggrBucket{
-			{Interval: 30 * time.Minute, Age: 1200 * time.Hour, SrcType: 3 * time.Minute},
+			{Interval: 30 * time.Minute, Age: 12000 * time.Hour, SrcType: 3 * time.Minute},
 		},
 	}
 
 	err = reagg.Do(ctx)
 
-	assert.Equal(t, errors.New("failed to find matching docs in db"), errors.Unwrap(err))
+	assert.Equal(t, nil, err)
 }

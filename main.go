@@ -7,12 +7,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"os"
 	"time"
 )
 
 var opts struct {
-	Port              string        `long:"port" env:"PORT" description:"port" default:":8080"`
-	MongoDbUrl        string        `long:"mngdb" env:"MNG_DB" description:"MongoDB url" default:"mongodb://localhost:27017"`
+	Port string `long:"port" env:"PORT" description:"port" default:":8080"`
+	//MongoDbUri        string        `long:"mngdburi" env:"MNG_DB_URI" description:"MongoDB uri" default:"mongodb://localhost:27017"`
 	DbName            string        `long:"dbname" env:"DB_NAME" description:"MongoDB name" default:"metrics-service"`
 	CollName          string        `long:"collname" env:"COLL_NAME" description:"MongoDB collection name" default:"metrics"`
 	IntForgivenessPrc float64       `long:"intforgiveprc" env:"INT_FORGIVE" description:"interval forgiveness percent" default:"0.25"`
@@ -31,7 +32,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	dbConn, err := mongo.Connect(ctx, options.Client().ApplyURI(opts.MongoDbUrl))
+	dbConn, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGODB_URI")))
 	if err != nil {
 		panic(err)
 	}
@@ -56,7 +57,7 @@ func main() {
 		},
 	}
 
-	reagg.Do(ctx)
+	reagg.Do(ctx) // goroutine that runs this once a day ??
 
 	if err := apiService.Run(); err != nil {
 		log.Printf("[ERROR] failed, %+v", err)

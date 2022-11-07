@@ -40,10 +40,6 @@ func (a *Reaggregator) process(ctx context.Context, bk ReaggrBucket) error {
 			"$lte": time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Add(-1 * bk.Age)},
 	})
 
-	if cursor.RemainingBatchLength() == 0 {
-		return fmt.Errorf("failed to find matching docs in db")
-	}
-
 	if err != nil {
 		return fmt.Errorf("error reading from the db: %w", err)
 	}
@@ -52,11 +48,16 @@ func (a *Reaggregator) process(ctx context.Context, bk ReaggrBucket) error {
 	var results []metric.Entry
 
 	for cursor.Next(ctx) {
+
 		var result metric.Entry
 		if err := cursor.Decode(&result); err != nil {
 			return fmt.Errorf("failed to decode from db: %w", err)
 		}
 		results = aggrProcess(results, result, bk.Interval)
+	}
+
+	if len(results) == 0 {
+		return nil
 	}
 
 	// insert the aggregated metrics to db

@@ -169,13 +169,14 @@ func (d *DBAccessor) everythingIsMatching(ctx context.Context, name string, from
 		return nil, err
 	}
 
-	if cursor.RemainingBatchLength() == 0 {
-		return []metric.Entry{}, nil
-	}
-
 	if err = cursor.All(ctx, &results); err != nil {
 		return nil, fmt.Errorf("failed to get a list of all returned documents for %v metric: %w", name, err)
 	}
+
+	if len(results) == 0 {
+		return []metric.Entry{}, nil
+	}
+
 	return results, nil
 }
 
@@ -272,13 +273,15 @@ func (d *DBAccessor) approximateInterval(ctx context.Context, name string, from,
 	if err != nil {
 		return nil, err
 	}
-	if cursor.RemainingBatchLength() == 0 {
-		return []metric.Entry{}, nil
-	}
 
 	if err = cursor.All(ctx, &results); err != nil {
 		return nil, fmt.Errorf("failed to get a list of all returned documents for %v metric: %w", name, err)
 	}
+
+	if len(results) == 0 {
+		return []metric.Entry{}, nil
+	}
+
 	return results, nil
 }
 
