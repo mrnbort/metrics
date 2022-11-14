@@ -1,0 +1,5 @@
+### Get list of metrics
+
+POST /get-metric
+
+{"name": "test", "from": "2022-11-07T15:04:05Z-05:00", "to": "2022-11-07T18:04:05Z-05:00", "interval": "30m"}

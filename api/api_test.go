@@ -64,6 +64,7 @@ func TestService_postMetric(t *testing.T) {
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
 		resp, err := client.Do(req)
+		require.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	}
 
@@ -210,7 +211,7 @@ func TestService_getMetricsList(t *testing.T) {
 
 func TestService_getMetric(t *testing.T) {
 	strg := &StorageMock{
-		GetOneMetricFunc: func(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+		GetOneMetricFunc: func(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 			return []metric.Entry{
 				{
 					Name:      "file_1",
@@ -228,12 +229,17 @@ func TestService_getMetric(t *testing.T) {
 	client := http.Client{Timeout: time.Second}
 
 	{ // successful attempt
-		tmFrom := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
-		tmTo := tmFrom.Add(24 * time.Hour)
-		interval := "30m"
-		req, err := http.NewRequest("GET", ts.URL+"/get-metric",
-			strings.NewReader(fmt.Sprintf(`{"name": "test", "from": "%s", "to": "%s", "interval": "%s"}`,
-				tmFrom.Format(time.RFC3339), tmTo.Format(time.RFC3339), interval)))
+		tmFrom := "2022-08-03T16:23:45Z"
+		//tmFrom := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
+		tmTo := "2022-08-04T17:24:45Z"
+		//tmTo := tmFrom.Add(24 * time.Hour)
+		interval := time.Minute * 30
+		//req, err := http.NewRequest("POST", ts.URL+"/get-metric",
+		//	strings.NewReader(fmt.Sprintf(`{"name": "test", "from": "%s", "to": "%s", "interval": %d}`,
+		//		tmFrom.Format(time.RFC3339), tmTo.Format(time.RFC3339), interval)))
+		req, err := http.NewRequest("POST", ts.URL+"/get-metric",
+			strings.NewReader(fmt.Sprintf(`{"name": "test", "from": %q, "to": %q, "interval": %d}`,
+				tmFrom, tmTo, interval)))
 		require.NoError(t, err)
 		resp, err := client.Do(req)
 		require.NoError(t, err)
@@ -242,25 +248,31 @@ func TestService_getMetric(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, `[{"name":"file_1","time_stamp":"2022-10-11T02:21:23Z","value":1,"type":0,"type_str":""}]`+"\n", string(data))
 		require.Equal(t, 1, len(strg.GetOneMetricCalls()))
+		assert.Equal(t, time.Minute*30, strg.GetOneMetricCalls()[0].Interval)
+		assert.Equal(t, "test", strg.GetOneMetricCalls()[0].Name)
+		assert.Equal(t, time.Date(2022, time.August, 3, 16, 23, 45, 0, time.UTC), strg.GetOneMetricCalls()[0].From)
+		assert.Equal(t, time.Date(2022, time.August, 4, 17, 24, 45, 0, time.UTC), strg.GetOneMetricCalls()[0].To)
+
 	}
 
 	{ // failed decode
-		req, err := http.NewRequest("GET", ts.URL+"/get-metric",
+		req, err := http.NewRequest("POST", ts.URL+"/get-metric",
 			strings.NewReader(fmt.Sprintf(``)))
 		require.NoError(t, err)
 		resp, err := client.Do(req)
+		require.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	}
 
 	{ // failed to get metric data
-		strg.GetOneMetricFunc = func(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+		strg.GetOneMetricFunc = func(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 			return nil, errors.New("oh oh")
 		}
 		tmFrom := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
 		tmTo := tmFrom.Add(24 * time.Hour)
-		interval := "30m"
-		req, err := http.NewRequest("GET", ts.URL+"/get-metric",
-			strings.NewReader(fmt.Sprintf(`{"name": "test", "from": "%s", "to": "%s", "interval": "%s"}`,
+		interval := time.Minute * 30
+		req, err := http.NewRequest("POST", ts.URL+"/get-metric",
+			strings.NewReader(fmt.Sprintf(`{"name": "test", "from": "%s", "to": "%s", "interval": %d}`,
 				tmFrom.Format(time.RFC3339), tmTo.Format(time.RFC3339), interval)))
 		require.NoError(t, err)
 		resp, err := client.Do(req)
@@ -274,7 +286,7 @@ func TestService_getMetric(t *testing.T) {
 
 func TestService_getMetrics(t *testing.T) {
 	strg := &StorageMock{
-		GetAllFunc: func(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+		GetAllFunc: func(ctx context.Context, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 			return []metric.Entry{
 				{
 					Name:      "file_1",
@@ -295,7 +307,7 @@ func TestService_getMetrics(t *testing.T) {
 		tmFrom := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
 		tmTo := tmFrom.Add(24 * time.Hour)
 		interval := "30m"
-		req, err := http.NewRequest("GET", ts.URL+"/get-metrics",
+		req, err := http.NewRequest("POST", ts.URL+"/get-metrics",
 			strings.NewReader(fmt.Sprintf(`{"from": "%s", "to": "%s", "interval": "%s"}`,
 				tmFrom.Format(time.RFC3339), tmTo.Format(time.RFC3339), interval)))
 		require.NoError(t, err)
@@ -309,7 +321,7 @@ func TestService_getMetrics(t *testing.T) {
 	}
 
 	{ // failed decode
-		req, err := http.NewRequest("GET", ts.URL+"/get-metrics",
+		req, err := http.NewRequest("POST", ts.URL+"/get-metrics",
 			strings.NewReader(fmt.Sprintf(``)))
 		require.NoError(t, err)
 		resp, err := client.Do(req)
@@ -317,13 +329,13 @@ func TestService_getMetrics(t *testing.T) {
 	}
 
 	{ // failed to get metric data
-		strg.GetAllFunc = func(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+		strg.GetAllFunc = func(ctx context.Context, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 			return nil, errors.New("oh oh")
 		}
 		tmFrom := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
 		tmTo := tmFrom.Add(24 * time.Hour)
 		interval := "30m"
-		req, err := http.NewRequest("GET", ts.URL+"/get-metrics",
+		req, err := http.NewRequest("POST", ts.URL+"/get-metrics",
 			strings.NewReader(fmt.Sprintf(`{"from": "%s", "to": "%s", "interval": "%s"}`,
 				tmFrom.Format(time.RFC3339), tmTo.Format(time.RFC3339), interval)))
 		require.NoError(t, err)

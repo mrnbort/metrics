@@ -209,7 +209,7 @@ func TestService_GetList(t *testing.T) {
 
 func TestService_GetOneMetric(t *testing.T) {
 	db := &AccessorMock{
-		FindOneMetricFunc: func(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+		FindOneMetricFunc: func(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 			return nil, nil
 		},
 	}
@@ -228,7 +228,7 @@ func TestService_GetOneMetric(t *testing.T) {
 	}
 
 	{ // failed attempt
-		db.FindOneMetricFunc = func(ctx context.Context, name string, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+		db.FindOneMetricFunc = func(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 			return nil, errors.New("blah")
 		}
 		_, err := svc.GetOneMetric(ctx, "file_1",
@@ -241,7 +241,7 @@ func TestService_GetOneMetric(t *testing.T) {
 
 func TestService_GetAll(t *testing.T) {
 	db := &AccessorMock{
-		FindAllFunc: func(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+		FindAllFunc: func(ctx context.Context, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 			return nil, nil
 		},
 	}
@@ -260,15 +260,13 @@ func TestService_GetAll(t *testing.T) {
 	}
 
 	{ // failed attempt
-		db.FindAllFunc = func(ctx context.Context, from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+		db.FindAllFunc = func(ctx context.Context, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 			return nil, errors.New("blah")
 		}
 		_, err := svc.GetAll(ctx,
 			time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 			time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
 			2*time.Minute)
-		assert.EqualError(t, err, fmt.Sprintf("failed to find all metrics from %v to %v: blah",
-			time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
-			time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC)))
+		assert.EqualError(t, err, fmt.Sprintf("failed to find metrics: blah"))
 	}
 }

@@ -7,9 +7,16 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - MONGODB_URI=mongodb://localhost:27017
+      - MNG_DB_URI=mongodb://mongo:27017
+
+  mongo:
+    image: mongo
+    restart: always
+    container_name: mongodb
     volumes:
       - mongodata:/data/db
+    ports:
+      - "27117:27017"
 
 volumes:
   mongodata:

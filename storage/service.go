@@ -114,7 +114,7 @@ func (s *Service) GetOneMetric(ctx context.Context, name string, from, to time.T
 func (s *Service) GetAll(ctx context.Context, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 	metrics, err := s.db.FindAll(ctx, from, to, interval)
 	if err != nil {
-		return metrics, fmt.Errorf("failed to find all metrics from %v to %v: %w", from, to, err)
+		return metrics, fmt.Errorf("failed to find metrics: %w", err)
 	}
 	return metrics, nil
 }
@@ -131,14 +131,12 @@ func (s *Service) ActivateCleanup(ctx context.Context, duration time.Duration) {
 		tick := time.NewTicker(duration)
 		defer tick.Stop()
 
-		for {
-			select {
-			case <-tick.C:
-				if err := s.doCleanup(ctx); err != nil {
-					log.Printf("oh my, failed to clenaup, %v", err)
-				}
+		for range tick.C {
+			if err := s.doCleanup(ctx); err != nil {
+				log.Printf("oh my, failed to clenaup, %v", err)
 			}
 		}
+
 	}()
 }
 

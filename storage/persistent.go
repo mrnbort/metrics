@@ -41,7 +41,7 @@ func (d *DBAccessor) Write(ctx context.Context, m metric.Entry) error {
 // Delete removes entries from db
 func (d *DBAccessor) Delete(ctx context.Context, m metric.Entry) error {
 	collection := d.db.Database(d.dbName).Collection(d.collName)
-	if _, err := collection.DeleteMany(ctx, bson.D{{"name", m.Name}}); err != nil {
+	if _, err := collection.DeleteMany(ctx, bson.D{{Key: "name", Value: m.Name}}); err != nil {
 		return fmt.Errorf("failed to delete %v: %w", m.Name, err)
 	}
 	fmt.Printf("deleted metric %v\n", m.Name)
@@ -121,6 +121,11 @@ func (d *DBAccessor) FindAll(ctx context.Context, from, to time.Time, interval t
 	}
 
 	for _, name := range metricsList {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
 		res, err := d.everythingIsMatching(ctx, name, from, to, interval)
 		if err != nil {
 			return nil, err
@@ -151,7 +156,7 @@ func (d *DBAccessor) FindAll(ctx context.Context, from, to time.Time, interval t
 	return results, nil
 }
 
-// EverythingIsMatching finds all documents that are matching the metric, interval and timeframe
+// everythingIsMatching finds all documents that are matching the metric, interval and timeframe
 func (d *DBAccessor) everythingIsMatching(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 	var results []metric.Entry
 
@@ -168,6 +173,7 @@ func (d *DBAccessor) everythingIsMatching(ctx context.Context, name string, from
 	if err != nil {
 		return nil, err
 	}
+	defer cursor.Close(ctx)
 
 	if err = cursor.All(ctx, &results); err != nil {
 		return nil, fmt.Errorf("failed to get a list of all returned documents for %v metric: %w", name, err)
@@ -180,8 +186,9 @@ func (d *DBAccessor) everythingIsMatching(ctx context.Context, name string, from
 	return results, nil
 }
 
-// AggregateSmallerInterval aggregates all documents that are matching the metric, timeframe from a smaller interval
+// aggregateSmallerInterval aggregates all documents that are matching the metric, timeframe from a smaller interval
 func (d *DBAccessor) aggregateSmallerInterval(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
+
 	var results []metric.Entry
 
 	collection := d.db.Database(d.dbName).Collection(d.collName)
@@ -199,6 +206,7 @@ func (d *DBAccessor) aggregateSmallerInterval(ctx context.Context, name string, 
 
 	for _, l := range list {
 		intervalList = append(intervalList, time.Duration(l.(int64)))
+		//intervalList = append(intervalList, time.Duration(l.(int64)))
 	}
 
 	// sort the available intervals (descending)
@@ -229,7 +237,7 @@ func (d *DBAccessor) aggregateSmallerInterval(ctx context.Context, name string, 
 	if err != nil {
 		return nil, err
 	}
-
+	defer cursor.Close(ctx)
 	//dict := make(map[string]metric.Entry)
 
 	// aggregate available interval
@@ -249,7 +257,7 @@ func (d *DBAccessor) aggregateSmallerInterval(ctx context.Context, name string, 
 	return results, nil
 }
 
-// ApproximateInterval can approximate the requested interval
+// approximateInterval can approximate the requested interval
 func (d *DBAccessor) approximateInterval(ctx context.Context, name string, from, to time.Time, interval time.Duration) ([]metric.Entry, error) {
 	var results []metric.Entry
 
@@ -273,6 +281,7 @@ func (d *DBAccessor) approximateInterval(ctx context.Context, name string, from,
 	if err != nil {
 		return nil, err
 	}
+	defer cursor.Close(ctx)
 
 	if err = cursor.All(ctx, &results); err != nil {
 		return nil, fmt.Errorf("failed to get a list of all returned documents for %v metric: %w", name, err)

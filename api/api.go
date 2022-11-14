@@ -37,11 +37,27 @@ type Storage interface {
 type JSON map[string]interface{}
 
 // Run the listener and request's router, activates the rest server
-func (s Service) Run() error {
-	log.Printf("[INFO] activate rest service")
-	if err := http.ListenAndServe(s.Port, s.routes()); err != http.ErrServerClosed {
+func (s Service) Run(ctx context.Context) error {
+
+	httpSrv := &http.Server{
+		Addr:         s.Port,
+		Handler:      s.routes(),
+		ReadTimeout:  time.Second,
+		WriteTimeout: 30 * time.Second,
+	}
+
+	go func() {
+		<-ctx.Done()
+		err := httpSrv.Close()
+		if err != nil {
+			log.Print("cannot close server")
+		}
+	}()
+
+	if err := httpSrv.ListenAndServe(); err != http.ErrServerClosed {
 		return fmt.Errorf("service failed to run, err:%v", err)
 	}
+
 	return nil
 }
 
@@ -62,8 +78,8 @@ func (s Service) routes() chi.Router {
 
 	mux.Get("/get-metrics-list", s.getMetricsList)
 	// mux.Get("/get-metric?name={name}&from={from}&to={to}&interval={int}", s.getMetric)
-	mux.Get("/get-metric", s.getMetric)
-	mux.Get("/get-metrics", s.getMetrics)
+	mux.Post("/get-metric", s.getMetric)
+	mux.Post("/get-metrics", s.getMetrics)
 
 	return mux
 }
@@ -122,7 +138,7 @@ func (s Service) getMetricsList(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, result)
 }
 
-// GET /get-metric
+// POST /get-metric
 func (s Service) getMetric(w http.ResponseWriter, r *http.Request) {
 	request := metric.Lookup{}
 	ctx := r.Context()
@@ -134,15 +150,7 @@ func (s Service) getMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	interval, err := time.ParseDuration(request.Interval)
-	if err != nil {
-		log.Printf("[WARN] can't parse duration: %v", err)
-		render.Status(r, http.StatusInternalServerError)
-		render.JSON(w, r, JSON{"error": err.Error()})
-		return
-	}
-
-	result, err := s.Storage.GetOneMetric(ctx, request.Name, request.From, request.To, interval)
+	result, err := s.Storage.GetOneMetric(ctx, request.Name, request.From, request.To, time.Duration(request.Interval))
 	if err != nil {
 		log.Printf("[WARN] can't get metric data: %v", err)
 		render.Status(r, http.StatusInternalServerError)
@@ -158,7 +166,7 @@ func (s Service) getMetric(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, result)
 }
 
-// GET /get-metrics
+// POST /get-metrics
 func (s Service) getMetrics(w http.ResponseWriter, r *http.Request) {
 	request := metric.Lookup{}
 	ctx := r.Context()
@@ -170,15 +178,7 @@ func (s Service) getMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	interval, err := time.ParseDuration(request.Interval)
-	if err != nil {
-		log.Printf("[WARN] can't parse duration: %v", err)
-		render.Status(r, http.StatusInternalServerError)
-		render.JSON(w, r, JSON{"error": err.Error()})
-		return
-	}
-
-	result, err := s.Storage.GetAll(ctx, request.From, request.To, interval)
+	result, err := s.Storage.GetAll(ctx, request.From, request.To, time.Duration(request.Interval))
 	if err != nil {
 		log.Printf("[WARN] can't get metrics data: %v", err)
 		render.Status(r, http.StatusInternalServerError)

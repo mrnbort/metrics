@@ -9,18 +9,21 @@ import (
 	"time"
 )
 
+// ReaggrBucket contains buckets that need to be re-aggregated in db based on the age and interval
 type ReaggrBucket struct {
 	Interval time.Duration // 30m, 8h, 24h, 7d what interval we want to, to know what the type of the interval is after aggr
 	Age      time.Duration // 24h, 7d, ...
 	SrcType  time.Duration // to know what type of the interval we are looking for to aggr in db
 }
 
+// Reaggregator allows to connect to a specific MongoDB and collection to re-aggregate data based on the buckets
 type Reaggregator struct {
 	MongoClient      *mongo.Client
 	DbName, CollName string
 	Buckets          []ReaggrBucket
 }
 
+// Do initiates the re-aggregation process in db
 func (a *Reaggregator) Do(ctx context.Context) error {
 
 	for _, bk := range a.Buckets {
