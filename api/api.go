@@ -50,7 +50,7 @@ func (s Service) Run(ctx context.Context) error {
 		<-ctx.Done()
 		err := httpSrv.Close()
 		if err != nil {
-			log.Print("cannot close server")
+			log.Printf("[WARN] can't close server: %v", err)
 		}
 	}()
 
@@ -77,7 +77,6 @@ func (s Service) routes() chi.Router {
 	})
 
 	mux.Get("/get-metrics-list", s.getMetricsList)
-	// mux.Get("/get-metric?name={name}&from={from}&to={to}&interval={int}", s.getMetric)
 	mux.Post("/get-metric", s.getMetric)
 	mux.Post("/get-metrics", s.getMetrics)
 

@@ -56,7 +56,10 @@ func (a *Reaggregator) process(ctx context.Context, bk ReaggrBucket) error {
 		if err := cursor.Decode(&result); err != nil {
 			return fmt.Errorf("failed to decode from db: %w", err)
 		}
-		results = aggrProcess(results, result, bk.Interval)
+		results, err = aggrProcess(ctx, results, result, bk.Interval)
+		if err != nil {
+			return fmt.Errorf("failed to aggregate db: %w", err)
+		}
 	}
 
 	if len(results) == 0 {
@@ -83,7 +86,13 @@ func (a *Reaggregator) process(ctx context.Context, bk ReaggrBucket) error {
 	return nil
 }
 
-func aggrProcess(results []metric.Entry, result metric.Entry, interval time.Duration) []metric.Entry {
+func aggrProcess(ctx context.Context, results []metric.Entry, result metric.Entry, interval time.Duration) ([]metric.Entry, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
+
 	dict := make(map[string]metric.Entry)
 	result.TimeStamp = roundUpTime(result.TimeStamp, interval)
 	for _, v := range results {
@@ -102,7 +111,7 @@ func aggrProcess(results []metric.Entry, result metric.Entry, interval time.Dura
 		for _, v := range dict {
 			finalResults = append(finalResults, v)
 		}
-		return finalResults
+		return finalResults, nil
 	}
 
 	// metric found
@@ -113,5 +122,5 @@ func aggrProcess(results []metric.Entry, result metric.Entry, interval time.Dura
 	for _, v := range dict {
 		finalResults = append(finalResults, v)
 	}
-	return finalResults
+	return finalResults, nil
 }

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -66,6 +67,7 @@ func TestService_postMetric(t *testing.T) {
 		resp, err := client.Do(req)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		require.Equal(t, 1, len(strg.UpdateCalls()))
 	}
 
 	{ // failed auth
@@ -77,6 +79,7 @@ func TestService_postMetric(t *testing.T) {
 		resp, err := client.Do(req)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+		require.Equal(t, 1, len(strg.UpdateCalls()))
 	}
 
 	{ // failed update
@@ -94,6 +97,7 @@ func TestService_postMetric(t *testing.T) {
 		data, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Equal(t, `{"error":"oh oh"}`+"\n", string(data))
+		require.Equal(t, 2, len(strg.UpdateCalls()))
 	}
 }
 
@@ -124,7 +128,6 @@ func TestService_deleteMetric(t *testing.T) {
 		data, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Equal(t, `{"status":"ok"}`+"\n", string(data))
-
 		require.Equal(t, 1, len(strg.DeleteCalls()))
 		assert.Equal(t, "test", strg.DeleteCalls()[0].M.Name)
 	}
@@ -137,6 +140,7 @@ func TestService_deleteMetric(t *testing.T) {
 		resp, err := client.Do(req)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+		require.Equal(t, 1, len(strg.DeleteCalls()))
 	}
 
 	{ // failed delete
@@ -152,6 +156,7 @@ func TestService_deleteMetric(t *testing.T) {
 		data, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Equal(t, `{"error":"oh oh"}`+"\n", string(data))
+		require.Equal(t, 2, len(strg.DeleteCalls()))
 	}
 }
 
@@ -193,6 +198,7 @@ func TestService_getMetricsList(t *testing.T) {
 		data, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Equal(t, `{"error":"oh oh"}`+"\n", string(data))
+		require.Equal(t, 2, len(strg.GetListCalls()))
 	}
 
 	{ // successful attempt but list is empty
@@ -206,6 +212,7 @@ func TestService_getMetricsList(t *testing.T) {
 		data, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Equal(t, `{"error":"no metrics in db"}`+"\n", string(data))
+		require.Equal(t, 3, len(strg.GetListCalls()))
 	}
 }
 
@@ -262,6 +269,7 @@ func TestService_getMetric(t *testing.T) {
 		resp, err := client.Do(req)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		require.Equal(t, 1, len(strg.GetOneMetricCalls()))
 	}
 
 	{ // failed to get metric data
@@ -281,6 +289,7 @@ func TestService_getMetric(t *testing.T) {
 		data, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Equal(t, `{"error":"oh oh"}`+"\n", string(data))
+		require.Equal(t, 2, len(strg.GetOneMetricCalls()))
 	}
 }
 
@@ -318,6 +327,10 @@ func TestService_getMetrics(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, `[{"name":"file_1","time_stamp":"2022-10-11T02:21:23Z","value":1,"type":0,"type_str":""}]`+"\n", string(data))
 		require.Equal(t, 1, len(strg.GetAllCalls()))
+		assert.Equal(t, time.Minute*30, strg.GetAllCalls()[0].Interval)
+		assert.Equal(t, time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC), strg.GetAllCalls()[0].From)
+		assert.Equal(t, time.Date(2022, 8, 4, 16, 23, 45, 0, time.UTC), strg.GetAllCalls()[0].To)
+
 	}
 
 	{ // failed decode
@@ -326,6 +339,7 @@ func TestService_getMetrics(t *testing.T) {
 		require.NoError(t, err)
 		resp, err := client.Do(req)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		require.Equal(t, 1, len(strg.GetAllCalls()))
 	}
 
 	{ // failed to get metric data
@@ -345,5 +359,15 @@ func TestService_getMetrics(t *testing.T) {
 		data, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 		assert.Equal(t, `{"error":"oh oh"}`+"\n", string(data))
+		require.Equal(t, 2, len(strg.GetAllCalls()))
 	}
+}
+
+func TestService_Run(t *testing.T) {
+	done := make(chan struct{})
+	go func() {
+		<-done
+		e := syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+		require.NoError(t, e)
+	}()
 }

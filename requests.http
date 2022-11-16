@@ -1,5 +1,62 @@
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+"name": "test", "time_stamp": "2022-11-15T15:04:05Z", "value": 5
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "test", "time_stamp": "2022-11-15T15:04:05Z", "value": 9
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "test2", "time_stamp": "2022-11-15T21:04:05Z", "value": 1
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "test2", "time_stamp": "2022-11-15T11:04:05Z", "value": 2
+}
+
+### Delete metric
+DELETE localhost:8080/metric?name=test
+Authorization: Basic admin Lapatusik
+
 ### Get list of metrics
+GET localhost:8080/get-metrics-list
 
-POST /get-metric
+### Get metric data
+POST localhost:8080/get-metric
 
-{"name": "test", "from": "2022-11-07T15:04:05Z-05:00", "to": "2022-11-07T18:04:05Z-05:00", "interval": "30m"}
+{"name": "test", "from": "2022-11-15T14:04:05Z", "to": "2022-11-15T16:04:05Z", "interval": "30m"}
+
+### Get all metrics data
+POST localhost:8080/get-metrics
+
+{"from": "2022-11-15T10:04:05Z", "to": "2022-11-15T23:04:05Z", "interval": "30m"}
+
+### Get all metrics data
+POST localhost:8080/get-metrics
+
+{"from": "2022-11-15T10:04:05Z", "to": "2022-11-15T23:04:05Z", "interval": "12h"}
+
+### Get all metrics data
+POST localhost:8080/get-metrics
+
+{"from": "2022-11-15T10:04:05Z", "to": "2022-11-15T23:04:05Z", "interval": "24h"}

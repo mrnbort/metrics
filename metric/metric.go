@@ -57,13 +57,13 @@ func (duration *Duration) UnmarshalJSON(b []byte) error {
 // research ctx
 // in api_test change time to str
 // to rebuild docker compose build, docker compose up
-
 // tests for metric_test
 // ctx add to reagrr
 // add calls check to api tests
-// test run that ctx canceled
-// ci/cd
-// go-realeser ---look at cronn
+// test run that ctx canceled ?????
 // write requests.http
 // read.me
+
+// ci/cd
+// go-realeser ---look at cronn
 // go templates: feed-master: api/web.go, webapp

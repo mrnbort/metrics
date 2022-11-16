@@ -157,7 +157,7 @@ func TestDBAccessor_everythingIsMatching_Success(t *testing.T) {
 		"file_1",
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(1*time.Minute))
+		1*time.Minute)
 	assert.Equal(t, 3, len(metricsList))
 }
 
@@ -179,7 +179,7 @@ func TestDBAccessor_everythingIsMatching_None(t *testing.T) {
 		"file_1",
 		time.Date(2022, 11, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 11, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(1*time.Minute))
+		1*time.Minute)
 	assert.Equal(t, 0, len(metricsList))
 }
 
@@ -227,7 +227,7 @@ func TestDBAccessor_aggregateSmallerInterval_Success(t *testing.T) {
 		"file_1",
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(5*time.Minute))
+		5*time.Minute)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(res))
 }
@@ -262,7 +262,7 @@ func TestDBAccessor_aggregateSmallerInterval_NoData(t *testing.T) {
 		"file_1",
 		time.Date(2022, 11, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 11, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(5*time.Minute))
+		5*time.Minute)
 	assert.Equal(t, 0, len(res))
 }
 
@@ -307,7 +307,7 @@ func TestDBAccessor_aggregateSmallerInterval_NoZeroRemainder(t *testing.T) {
 		"file_1",
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(5*time.Minute))
+		5*time.Minute)
 
 	assert.Equal(t, 0, len(res))
 }
@@ -375,7 +375,7 @@ func TestDBAccessor_aggregateSmallerInterval_IntervalCheck(t *testing.T) {
 		"file_1",
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(15*time.Minute))
+		15*time.Minute)
 
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(res))
@@ -438,7 +438,7 @@ func TestDBAccessor_ApproximateInterval_Success(t *testing.T) {
 		"file_1",
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(6*time.Minute))
+		6*time.Minute)
 
 	require.NoError(t, err)
 	assert.Equal(t, 3, len(res))
@@ -462,7 +462,7 @@ func TestDBAccessor_ApproximateInterval_NoForgiveness(t *testing.T) {
 		"file_1",
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(10*time.Minute))
+		10*time.Minute)
 
 	assert.Equal(t, 0, len(res))
 }
@@ -485,7 +485,7 @@ func TestDBAccessor_ApproximateInterval_NoData(t *testing.T) {
 		"file_1",
 		time.Date(2022, 11, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 11, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(6*time.Minute))
+		6*time.Minute)
 
 	assert.Equal(t, 0, len(res))
 }
@@ -510,7 +510,7 @@ func Test_roundUpTime(t *testing.T) {
 
 	for i, tt := range tbl {
 		t.Run(strconv.Itoa(i+1), func(t *testing.T) {
-			assert.Equal(t, tt.res, roundUpTime(tt.tm, metric.Duration(tt.roundOn)))
+			assert.Equal(t, tt.res, roundUpTime(tt.tm, tt.roundOn))
 		})
 	}
 }
@@ -592,7 +592,7 @@ func TestDBAccessor_FindOneMetric_EverythingIsMatching(t *testing.T) {
 		"file_1",
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(5*time.Minute))
+		5*time.Minute)
 	require.NoError(t, err)
 
 	assert.Equal(t, 3, len(res))
@@ -640,7 +640,7 @@ func TestDBAccessor_FindOneMetric_AggrSmallerInterval(t *testing.T) {
 		"file_1",
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(10*time.Minute))
+		10*time.Minute)
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, len(res))
@@ -689,7 +689,7 @@ func TestDBAccessor_FindOneMetric_ApproximateInterval(t *testing.T) {
 		"file_1",
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(2*time.Minute))
+		2*time.Minute)
 	require.NoError(t, err)
 
 	assert.Equal(t, 3, len(res))
@@ -748,7 +748,7 @@ func TestDBAccessor_FindOneMetric_CannotApprox(t *testing.T) {
 		"file_1",
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(2*time.Minute))
+		2*time.Minute)
 
 	assert.Equal(t, 0, len(res))
 }
@@ -812,7 +812,7 @@ func TestDBAccessor_FindAll_IntervMatchOrAggr(t *testing.T) {
 		ctx,
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(2*time.Minute))
+		2*time.Minute)
 	require.NoError(t, err)
 
 	assert.Equal(t, 5, len(res))
@@ -879,7 +879,7 @@ func TestDBAccessor_FindAll_IntervApprox(t *testing.T) {
 		ctx,
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(6*time.Minute))
+		6*time.Minute)
 	require.NoError(t, err)
 
 	assert.Equal(t, 3, len(res))
@@ -946,7 +946,7 @@ func TestDBAccessor_FindAll_CannotApprox(t *testing.T) {
 		ctx,
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
-		metric.Duration(3*time.Minute))
+		3*time.Minute)
 	require.NoError(t, err)
 
 	assert.Equal(t, 0, len(res))

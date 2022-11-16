@@ -246,7 +246,10 @@ func (d *DBAccessor) aggregateSmallerInterval(ctx context.Context, name string, 
 		if err := cursor.Decode(&result); err != nil {
 			return nil, fmt.Errorf("failed to decode from db: %w", err)
 		}
-		results = aggrProcess(results, result, interval)
+		results, err = aggrProcess(ctx, results, result, interval)
+		if err != nil {
+			return nil, fmt.Errorf("failed to reaggregate: %w", err)
+		}
 	}
 
 	// append dict values to the final result
