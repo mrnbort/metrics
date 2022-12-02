@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/umputun/metrics/metric"
+	"html/template"
 	"log"
 	"net/http"
 	"time"
@@ -19,9 +20,12 @@ import (
 
 // Service provides access to the db
 type Service struct {
-	Storage Storage
-	Port    string
-	Auth    AuthMidlwr
+	Storage       Storage
+	Port          string
+	Auth          AuthMidlwr
+	TemplLocation string
+
+	templates *template.Template
 }
 
 // Storage interface updates, deletes and gets metrics from the memory and db
@@ -38,6 +42,12 @@ type JSON map[string]interface{}
 
 // Run the listener and request's router, activates the rest server
 func (s Service) Run(ctx context.Context) error {
+
+	if s.TemplLocation == "" {
+		s.TemplLocation = "web/templates/*"
+	}
+	log.Printf("[DEBUG] loading templates from %s", s.TemplLocation)
+	s.templates = template.Must(template.ParseGlob(s.TemplLocation))
 
 	httpSrv := &http.Server{
 		Addr:         s.Port,
@@ -126,6 +136,7 @@ func (s Service) getMetricsList(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[WARN] can't get a list of metrics: %v", err)
 		render.Status(r, http.StatusInternalServerError)
 		render.JSON(w, r, JSON{"error": err.Error()})
+		s.renderErrorPage(w, r, err, 400)
 		return
 	}
 
@@ -191,4 +202,17 @@ func (s Service) getMetrics(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, r, JSON{"error": "no metrics in db"})
 	}
 	render.JSON(w, r, result)
+}
+
+func (s Service) renderErrorPage(w http.ResponseWriter, r *http.Request, err error, errCode int) {
+	tmplData := struct {
+		Status int
+		Error  string
+	}{Status: errCode, Error: err.Error()}
+
+	if err := s.templates.ExecuteTemplate(w, "error.tmpl", &tmplData); err != nil {
+		render.Status(r, http.StatusInternalServerError)
+		render.JSON(w, r, JSON{"error": err.Error()})
+		return
+	}
 }
