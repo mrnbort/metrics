@@ -136,7 +136,7 @@ func (s Service) getMetricsList(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[WARN] can't get a list of metrics: %v", err)
 		render.Status(r, http.StatusInternalServerError)
 		render.JSON(w, r, JSON{"error": err.Error()})
-		s.renderErrorPage(w, r, err, 400)
+		//s.renderErrorPage(w, r, err, 400)
 		return
 	}
 
