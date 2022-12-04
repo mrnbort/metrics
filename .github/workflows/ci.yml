@@ -27,4 +27,4 @@ jobs:
         #working-directory: app
         env:
           TZ: "America/Chicago"
-          GOFLAGS: "-mod=vendor"
+          #GOFLAGS: "-mod=vendor"
