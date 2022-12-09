@@ -20,27 +20,3 @@ services:
 
 volumes:
   mongodata:
-
-
-#services:
-#
-#  metrics-server:
-#    build: .
-#    container_name: "metrics-server"
-#    ports:
-#      - "8080:8080"
-#    depends_on:
-#      - mongo
-#
-#
-#  mongo:
-#    image: mongo
-#    restart: always
-#    container_name: mongodb
-#    volumes:
-#      - mongodata:/data/db
-#    ports:
-#      - "27017:27017"
-#
-#volumes:
-#  mongodata:

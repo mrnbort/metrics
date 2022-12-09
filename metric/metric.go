@@ -67,3 +67,4 @@ func (duration *Duration) UnmarshalJSON(b []byte) error {
 // ci/cd
 // go-realeser ---look at cronn
 // go templates: feed-master: api/web.go, webapp
+// integration test: main_test.go

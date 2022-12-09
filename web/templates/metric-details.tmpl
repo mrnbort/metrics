@@ -1,5 +1,5 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<br>
 
 <head>
     <!-- Required meta tags -->
@@ -47,29 +47,26 @@
     </div>
 </header>
 
+<p> Details for metric: {{.Name}}, for the period between {{.From}} and {{.To}}</p>
 <table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Available metrics:</th>
-        </tr>
-    </thead>
-    <tbody>
-    {{ range .Metrics}}
     <tr>
-        <td>
-            <a href="http://localhost:8080/web/metric-details?name={{.}}">{{.}}</a>
-        </td>
+        <th>TimeStamp</th>
+        <th>Value</th>
     </tr>
+    {{ range .Metrics}}
+        <tr>
+            <td>{{.TimeStamp}}</td>
+            <td>{{.Value}}</td>
+        </tr>
     {{ end }}
-    </tbody>
 </table>
 
 <footer class="section footer-classic context-dark bg-image text-white" style="background: url(https://tandsgo.com/wp-content/uploads/2020/09/Facebook-cover-photo-purple-and-blue-abstract.jpg); background-size: cover">
     <div class="container">
         <div class="row row-30">
             <div class="col-md-4 col-xl-5">
-                    <!-- Rights-->
-                    <p class="rights"><span>©  </span><span class="copyright-year">2022</span><span> </span><span>Metrics Service</span><span> - </span><span>All Rights Reserved.</span></p>
+                <!-- Rights-->
+                <p class="rights"><span>©  </span><span class="copyright-year">2022</span><span> </span><span>Metrics Service</span><span> - </span><span>All Rights Reserved.</span></p>
             </div>
         </div>
     </div>
@@ -78,4 +75,3 @@
 </body>
 
 </html>
-

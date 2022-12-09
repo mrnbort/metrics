@@ -60,3 +60,102 @@ POST localhost:8080/get-metrics
 POST localhost:8080/get-metrics
 
 {"from": "2022-11-15T10:04:05Z", "to": "2022-11-15T23:04:05Z", "interval": "24h"}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "file_1", "time_stamp": "2022-12-09T01:04:05Z", "value": 1
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "file_1", "time_stamp": "2022-12-09T01:14:05Z", "value": 2
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "file_1", "time_stamp": "2022-12-09T01:24:05Z", "value": 3
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "file_1", "time_stamp": "2022-12-09T01:44:05Z", "value": 4
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "file_1", "time_stamp": "2022-12-09T02:44:05Z", "value": 5
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "file_1", "time_stamp": "2022-12-09T03:44:05Z", "value": 6
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "file_1", "time_stamp": "2022-12-09T04:44:05Z", "value": 7
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "file_1", "time_stamp": "2022-12-09T05:44:05Z", "value": 8
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "file_1", "time_stamp": "2022-12-09T06:44:05Z", "value": 9
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "file_1", "time_stamp": "2022-12-09T08:44:05Z", "value": 1
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "file_1", "time_stamp": "2022-12-09T09:44:05Z", "value": 3
+}

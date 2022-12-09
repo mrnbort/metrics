@@ -13,6 +13,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"sort"
 	"time"
 )
 
@@ -20,12 +21,11 @@ import (
 
 // Service provides access to the db
 type Service struct {
-	Storage       Storage
-	Port          string
-	Auth          AuthMidlwr
-	TemplLocation string
-
-	templates *template.Template
+	Storage    Storage
+	Port       string
+	Auth       AuthMidlwr
+	templates  *template.Template
+	httpServer *http.Server
 }
 
 // Storage interface updates, deletes and gets metrics from the memory and db
@@ -43,13 +43,9 @@ type JSON map[string]interface{}
 // Run the listener and request's router, activates the rest server
 func (s Service) Run(ctx context.Context) error {
 
-	if s.TemplLocation == "" {
-		s.TemplLocation = "web/templates/*"
-	}
-	log.Printf("[DEBUG] loading templates from %s", s.TemplLocation)
-	s.templates = template.Must(template.ParseGlob(s.TemplLocation))
+	s.templates = template.Must(template.ParseGlob("web/templates/*.tmpl"))
 
-	httpSrv := &http.Server{
+	s.httpServer = &http.Server{
 		Addr:         s.Port,
 		Handler:      s.routes(),
 		ReadTimeout:  time.Second,
@@ -58,13 +54,13 @@ func (s Service) Run(ctx context.Context) error {
 
 	go func() {
 		<-ctx.Done()
-		err := httpSrv.Close()
+		err := s.httpServer.Close()
 		if err != nil {
 			log.Printf("[WARN] can't close server: %v", err)
 		}
 	}()
 
-	if err := httpSrv.ListenAndServe(); err != http.ErrServerClosed {
+	if err := s.httpServer.ListenAndServe(); err != http.ErrServerClosed {
 		return fmt.Errorf("service failed to run, err:%v", err)
 	}
 
@@ -89,6 +85,11 @@ func (s Service) routes() chi.Router {
 	mux.Get("/get-metrics-list", s.getMetricsList)
 	mux.Post("/get-metric", s.getMetric)
 	mux.Post("/get-metrics", s.getMetrics)
+
+	mux.Route("/web", func(r chi.Router) {
+		r.Get("/metrics-list", s.webGetMetricsList)
+		r.Get("/metric-details", s.webGetMetricsDetails)
+	})
 
 	return mux
 }
@@ -136,7 +137,6 @@ func (s Service) getMetricsList(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[WARN] can't get a list of metrics: %v", err)
 		render.Status(r, http.StatusInternalServerError)
 		render.JSON(w, r, JSON{"error": err.Error()})
-		//s.renderErrorPage(w, r, err, 400)
 		return
 	}
 
@@ -204,13 +204,55 @@ func (s Service) getMetrics(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, result)
 }
 
-func (s Service) renderErrorPage(w http.ResponseWriter, r *http.Request, err error, errCode int) {
-	tmplData := struct {
-		Status int
-		Error  string
-	}{Status: errCode, Error: err.Error()}
+// GET /metrics-list
+func (s Service) webGetMetricsList(w http.ResponseWriter, r *http.Request) {
+	metrxList, err := s.Storage.GetList(r.Context())
+	if err != nil {
+		render.Status(r, http.StatusInternalServerError)
+		render.JSON(w, r, JSON{"error": err.Error()})
+		return
+	}
 
-	if err := s.templates.ExecuteTemplate(w, "error.tmpl", &tmplData); err != nil {
+	tmplData := struct {
+		Metrics []string
+	}{
+		Metrics: metrxList,
+	}
+
+	err = s.templates.ExecuteTemplate(w, "metrics-list.tmpl", &tmplData)
+	if err != nil {
+		render.Status(r, http.StatusInternalServerError)
+		render.JSON(w, r, JSON{"error": err.Error()})
+		return
+	}
+
+	//w.Header().Set("Content-Type", "text/html")
+	//w.WriteHeader(http.StatusOK)
+	//_, _ = w.Write([]byte("<html>metrics-list</html>"))
+}
+
+// GET /metric-details?name={metric}
+func (s Service) webGetMetricsDetails(w http.ResponseWriter, r *http.Request) {
+	mname := r.URL.Query().Get("name")
+	metrs, _ := s.Storage.GetOneMetric(r.Context(), mname, time.Now().Add(-24*time.Hour), time.Now(), time.Minute*30)
+
+	sort.Slice(metrs, func(i, j int) bool {
+		return metrs[i].TimeStamp.Before(metrs[j].TimeStamp)
+	})
+
+	tmplData := struct {
+		Metrics  []metric.Entry
+		Name     string
+		From, To string
+	}{
+		Metrics: metrs,
+		Name:    mname,
+		From:    time.Now().Add(-24 * time.Hour).Format("2006-01-02 15:04:05"),
+		To:      time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	err := s.templates.ExecuteTemplate(w, "metric-details.tmpl", &tmplData)
+	if err != nil {
 		render.Status(r, http.StatusInternalServerError)
 		render.JSON(w, r, JSON{"error": err.Error()})
 		return
