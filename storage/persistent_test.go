@@ -182,6 +182,7 @@ func TestDBAccessor_everythingIsMatching_None(t *testing.T) {
 		time.Date(2022, 11, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 11, 11, 3, 0, 0, 0, time.UTC),
 		1*time.Minute)
+	require.NoError(t, err)
 	assert.Equal(t, 0, len(metricsList))
 }
 
@@ -265,6 +266,7 @@ func TestDBAccessor_aggregateSmallerInterval_NoData(t *testing.T) {
 		time.Date(2022, 11, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 11, 11, 3, 0, 0, 0, time.UTC),
 		5*time.Minute)
+	require.NoError(t, err)
 	assert.Equal(t, 0, len(res))
 }
 
@@ -310,7 +312,7 @@ func TestDBAccessor_aggregateSmallerInterval_NoZeroRemainder(t *testing.T) {
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
 		5*time.Minute)
-
+	require.NoError(t, err)
 	assert.Equal(t, 0, len(res))
 }
 

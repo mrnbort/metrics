@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/umputun/metrics/metric"
@@ -267,6 +266,6 @@ func TestService_GetAll(t *testing.T) {
 			time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 			time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
 			2*time.Minute)
-		assert.EqualError(t, err, fmt.Sprintf("failed to find metrics: blah"))
+		assert.EqualError(t, err, "failed to find metrics: blah")
 	}
 }
