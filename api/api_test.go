@@ -60,8 +60,7 @@ func TestService_postMetric(t *testing.T) {
 	}
 
 	{ // failed decode
-		req, err := http.NewRequest("POST", ts.URL+"/metric",
-			strings.NewReader(fmt.Sprintf(``)))
+		req, err := http.NewRequest("POST", ts.URL+"/metric", strings.NewReader(""))
 		require.NoError(t, err)
 		req.SetBasicAuth("admin", "Lapatusik")
 		resp, err := client.Do(req)
@@ -263,8 +262,7 @@ func TestService_getMetric(t *testing.T) {
 	}
 
 	{ // failed decode
-		req, err := http.NewRequest("POST", ts.URL+"/get-metric",
-			strings.NewReader(fmt.Sprintf(``)))
+		req, err := http.NewRequest("POST", ts.URL+"/get-metric", strings.NewReader(""))
 		require.NoError(t, err)
 		resp, err := client.Do(req)
 		require.NoError(t, err)
@@ -334,10 +332,10 @@ func TestService_getMetrics(t *testing.T) {
 	}
 
 	{ // failed decode
-		req, err := http.NewRequest("POST", ts.URL+"/get-metrics",
-			strings.NewReader(fmt.Sprintf(``)))
+		req, err := http.NewRequest("POST", ts.URL+"/get-metrics", strings.NewReader(""))
 		require.NoError(t, err)
 		resp, err := client.Do(req)
+		require.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		require.Equal(t, 1, len(strg.GetAllCalls()))
 	}

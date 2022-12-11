@@ -194,7 +194,7 @@ func (d *DBAccessor) aggregateSmallerInterval(ctx context.Context, name string, 
 	collection := d.db.Database(d.dbName).Collection(d.collName)
 
 	var intervalList []time.Duration
-	list, err := collection.Distinct(ctx, "type", bson.D{{"name", name}, {"type", bson.D{{"$lt", interval}}}, {"time_stamp", bson.D{{"$gte", from}, {"$lte", to}}}})
+	list, err := collection.Distinct(ctx, "type", bson.D{{"name", name}, {"type", bson.D{{"$lt", interval}}}, {"time_stamp", bson.D{{"$gte", from}, {"$lte", to}}}}) //nolint
 
 	if len(list) == 0 {
 		return []metric.Entry{}, nil

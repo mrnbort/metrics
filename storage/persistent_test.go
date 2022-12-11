@@ -121,6 +121,7 @@ func TestDBAccessor_GetMetricsList(t *testing.T) {
 		})
 
 	metricsList, err := acc.GetMetricsList(ctx)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"file_1", "file_2", "file_3"}, metricsList)
 }
 
@@ -158,6 +159,7 @@ func TestDBAccessor_everythingIsMatching_Success(t *testing.T) {
 		time.Date(2022, 10, 11, 2, 0, 0, 0, time.UTC),
 		time.Date(2022, 10, 11, 3, 0, 0, 0, time.UTC),
 		1*time.Minute)
+	require.NoError(t, err)
 	assert.Equal(t, 3, len(metricsList))
 }
 
