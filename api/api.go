@@ -86,9 +86,11 @@ func (s Service) routes() chi.Router {
 	mux.Post("/get-metric", s.getMetric)
 	mux.Post("/get-metrics", s.getMetrics)
 
+	fs := http.FileServer(http.Dir("./web/static"))
 	mux.Route("/web", func(r chi.Router) {
 		r.Get("/metrics-list", s.webGetMetricsList)
 		r.Get("/metric-details", s.webGetMetricsDetails)
+		r.Handle("/static/*", http.StripPrefix("/web/static/", fs))
 	})
 
 	return mux

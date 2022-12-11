@@ -41,7 +41,7 @@ func main() {
 
 	//ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	//defer cancel()
-
+	log.Printf("stared metrics service")
 	ctx := context.Background()
 
 	// trap Ctrl+C and call cancel on the context

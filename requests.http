@@ -67,7 +67,7 @@ Authorization: Basic admin Lapatusik
 Content-Type: application/json
 
 {
-  "name": "file_1", "time_stamp": "2022-12-09T01:04:05Z", "value": 1
+  "name": "file_1", "time_stamp": "2022-12-11T01:04:05Z", "value": 1
 }
 
 ### Post metric
@@ -76,7 +76,7 @@ Authorization: Basic admin Lapatusik
 Content-Type: application/json
 
 {
-  "name": "file_1", "time_stamp": "2022-12-09T01:14:05Z", "value": 2
+  "name": "file_1", "time_stamp": "2022-12-11T01:14:05Z", "value": 2
 }
 
 ### Post metric
@@ -85,7 +85,7 @@ Authorization: Basic admin Lapatusik
 Content-Type: application/json
 
 {
-  "name": "file_1", "time_stamp": "2022-12-09T01:24:05Z", "value": 3
+  "name": "file_1", "time_stamp": "2022-12-11T01:24:05Z", "value": 3
 }
 
 ### Post metric
@@ -94,7 +94,7 @@ Authorization: Basic admin Lapatusik
 Content-Type: application/json
 
 {
-  "name": "file_1", "time_stamp": "2022-12-09T01:44:05Z", "value": 4
+  "name": "file_1", "time_stamp": "2022-12-11T01:44:05Z", "value": 4
 }
 
 ### Post metric
@@ -103,7 +103,7 @@ Authorization: Basic admin Lapatusik
 Content-Type: application/json
 
 {
-  "name": "file_1", "time_stamp": "2022-12-09T02:44:05Z", "value": 5
+  "name": "file_1", "time_stamp": "2022-12-11T02:44:05Z", "value": 5
 }
 
 ### Post metric
@@ -112,7 +112,7 @@ Authorization: Basic admin Lapatusik
 Content-Type: application/json
 
 {
-  "name": "file_1", "time_stamp": "2022-12-09T03:44:05Z", "value": 6
+  "name": "file_1", "time_stamp": "2022-12-11T03:44:05Z", "value": 6
 }
 
 ### Post metric
@@ -121,7 +121,7 @@ Authorization: Basic admin Lapatusik
 Content-Type: application/json
 
 {
-  "name": "file_1", "time_stamp": "2022-12-09T04:44:05Z", "value": 7
+  "name": "file_1", "time_stamp": "2022-12-11T04:44:05Z", "value": 7
 }
 
 ### Post metric
@@ -130,7 +130,7 @@ Authorization: Basic admin Lapatusik
 Content-Type: application/json
 
 {
-  "name": "file_1", "time_stamp": "2022-12-09T05:44:05Z", "value": 8
+  "name": "file_1", "time_stamp": "2022-12-11T05:44:05Z", "value": 8
 }
 
 ### Post metric
@@ -139,7 +139,7 @@ Authorization: Basic admin Lapatusik
 Content-Type: application/json
 
 {
-  "name": "file_1", "time_stamp": "2022-12-09T06:44:05Z", "value": 9
+  "name": "file_1", "time_stamp": "2022-12-11T06:44:05Z", "value": 9
 }
 
 ### Post metric
@@ -148,7 +148,7 @@ Authorization: Basic admin Lapatusik
 Content-Type: application/json
 
 {
-  "name": "file_1", "time_stamp": "2022-12-09T08:44:05Z", "value": 1
+  "name": "file_1", "time_stamp": "2022-12-11T08:44:05Z", "value": 1
 }
 
 ### Post metric
@@ -157,5 +157,14 @@ Authorization: Basic admin Lapatusik
 Content-Type: application/json
 
 {
-  "name": "file_1", "time_stamp": "2022-12-09T09:44:05Z", "value": 3
+  "name": "file_1", "time_stamp": "2022-12-11T09:44:05Z", "value": 3
+}
+
+### Post metric
+POST localhost:8080/metric
+Authorization: Basic admin Lapatusik
+Content-Type: application/json
+
+{
+  "name": "file_1", "time_stamp": "2022-12-11T10:44:05Z", "value": 3
 }
