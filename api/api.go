@@ -70,6 +70,7 @@ func (s Service) Run(ctx context.Context) error {
 func (s Service) routes() chi.Router {
 	mux := chi.NewRouter()
 	mux.Use(middleware.Throttle(100), middleware.Timeout(60*time.Second))
+	mux.Use(PingMiddleware)
 	mux.Use(tollbooth_chi.LimitHandler(tollbooth.NewLimiter(10, nil)))
 
 	limiter := func(limit float64) func(http.Handler) http.Handler {

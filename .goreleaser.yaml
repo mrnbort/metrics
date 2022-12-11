@@ -28,7 +28,7 @@ nfpms:
     file_name_template: "{{.ProjectName}}_{{.Tag}}_{{.Os}}_{{.Arch}}"
     vendor: Umputun
     homepage: https://github.com/umputun/metrics
-    maintainer: Umputun <umputun@gmail.com>
+    maintainer: MrnBort <maryna@bort.name>
     description: metrics service with the real-time aggregation
     license: MIT
     formats:
@@ -37,3 +37,5 @@ nfpms:
     bindir: /usr/bin
     epoch: 1
     release: 1
+
+# goreleaser --snapshot --skip-publish --rm-dist

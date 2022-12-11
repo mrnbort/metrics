@@ -33,3 +33,13 @@ func (a *AuthMidlwr) Handler(next http.Handler) http.Handler {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 	})
 }
+
+func PingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/ping" {
+			_, _ = w.Write([]byte("pong"))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
