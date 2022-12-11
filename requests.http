@@ -1,3 +1,6 @@
+### Ping
+GET localhost:8080/ping
+
 ### Post metric
 POST localhost:8080/metric
 Authorization: Basic admin Lapatusik
