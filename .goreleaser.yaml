@@ -10,23 +10,30 @@ builds:
       - arm
       - arm64
 archives:
-  - replacements:
-      darwin: macos
-      linux: Linux
-      windows: Windows
+  - name_template: "{{.ProjectName}}_{{.Tag}}_{{.Os}}_{{.Arch}}"
+    replacements:
       386: i386
       amd64: x86_64
-checksum:
-  name_template: 'checksums.txt'
-snapshot:
-  name_template: "{{ incpatch .Version }}-next"
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
+      darwin: macos
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
 
-# modelines, feel free to remove those if you don't want/use them:
-# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
-# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+nfpms:
+  -
+    package_name: metrics
+    file_name_template: "{{.ProjectName}}_{{.Tag}}_{{.Os}}_{{.Arch}}"
+    vendor: Umputun
+    homepage: https://github.com/umputun/metrics
+    maintainer: Umputun <umputun@gmail.com>
+    description: metrics service with the real-time aggregation
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/bin
+    epoch: 1
+    release: 1
