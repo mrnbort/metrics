@@ -1,16 +1,66 @@
-# Holiday service [![Run Tests and Build an Image](https://github.com/mrnbort/metrics/actions/workflows/ci.yml/badge.svg)](https://github.com/mrnbort/metrics/actions/workflows/ci.yml)
+# Metrics Monitoring Service [![Run Tests and Build an Image](https://github.com/mrnbort/metrics/actions/workflows/ci.yml/badge.svg)](https://github.com/mrnbort/metrics/actions/workflows/ci.yml)
 
 ## Description
 
-The Metrics server collects data for various metrics. 
-The main purpose of the server is to provide a user with the metric for monitoring events during a specified timeframe with a specified interval. 
-A metric is based on what the user wants to measure.
+The Metrics Monitoring service acts as a rest crud service to insert update 
+and retrieve metrics that allows a user to monitor metrics during a specified 
+timeframe with a specified interval.
+
+## Architecture and technical details
+
+### Collecting data
+
 Using a rest-like API the data is received by the server to process.
-This data has the name of a metric, the value and the timestamp (provided by user).
-The server aggregates data for every metric based on the age and interval provided by the admin.
-Aggregated data is stored in a MongoDB. The aggregator that processes POST requests ensures that the maximum possible loss of data is no more than 1 minute of data collected. 
-Aggregator is also able to clear data that already exists in the MongoDB from local memory to prevent out-of-memory errors.
-Although the intervals are pre-defined, the user is able to request any frequency, and the server will calculate the metric values for the requested frequency based on the recorded data.
+A POST request to save a metric entry contains the name of a metric, the value 
+and the timestamp. This POST request uses a basic authentication method. When the request is processed by the server, the data about the 
+metric is saved in the server's cache. The local memory is set up to hold only 1 
+minute of data which means that if multiple POST requests are received for the same 
+metric in one minute, 
+they will be aggregated by summing up the values to create a one-minute interval 
+value for the metric. The aggregation process in the server's cache is developed in 
+order to ensure a consistent level of granularity of one minute for data that will 
+be pushed to a MongoDB database. A goroutine which runs every minute was created to 
+verify that as soon as the age of the metric in server's cache reaches one minute, 
+the data for the metric is aggregated and pushed to the database. This two-stage 
+commit logic also prevents loss of data from the local memory beyond a one-minute 
+interval. 
+
+### Data storing/management
+
+A separate clean-up process was developed for the metrics data stored in the database.
+A goroutine runs the clean-up process every 24 hours. The server admin can customize 
+the criteria for which metric gets aggregated, for instance, each metric that is older
+than 24 hours will be aggregated into a 5-minute interval instead of the original 
+1-minute interval; each metric that is older than 7 days will be aggregated into a 
+30-minute interval and so on. A DELETE request protected by a basic authentication 
+method allows to delete a metric from the local memory and the database.
+
+### Data retrieving
+
+A user can request a list of available metrics in the MongoDB database, data for a 
+specific metric for a user defined time frame and interval, and data for all the 
+available metrics for a user defined time frame and interval. If the data for the metric
+in the database does not match the requested interval, the server will process the 
+request in one of the three ways:
+- approximate the data by aggregating smaller available intervals into the requested 
+interval
+- approximate the data based on an admin-defined threshold, for example, if the available 
+interval is within 25% of the requested interval, it will be considered as a "close match"
+and provided to the user
+- if no data in the database can be aggregated or "closely matched", a message "no metric
+in db" will be posted
+
+A web-based UI currently has two pages: for the list of available metrics and
+for details for each of the available metrics.
+
+### Non-functional aspects
+
+- all the endpoints are protected against abuses with limiters
+- the number of in-fly requests is also limited
+- reverse-proxy in front of the running container with 
+LE-based automatic SSL is set up
+
+
 
 ## Run in Docker
 
@@ -27,8 +77,8 @@ Although the intervals are pre-defined, the user is able to request any frequenc
 ### Public Endpoints
 
 1. `GET /get-metrics-list` - returns a list of available metrics, i.e.
-    ```
-   [
+     ```
+    [
     "file_1",
     "file_2",
     "file_3"
@@ -134,3 +184,20 @@ Although the intervals are pre-defined, the user is able to request any frequenc
         "status": "ok" 
         }
         ```
+      
+## command line parameters
+
+```
+Application Options:
+     --port=            http data server port (default: 8080)
+     --mngdburi         MongoDB uri (default: mongodb://localhost:27017)
+     --dbname           MongoDB name (default: metrics-service)
+     --collname         MongoDB collection name (default: metrics)
+     --intforgiveprc    interval forgiveness percent which determines the acceptable deviation from the requested interval (default: 0.25)
+     --cleanupdur       cleanup duration for the server's cache (default: 1m)
+     --username         user name (default: admin)
+     --userpasswd       user password (default: Lapatusik)
+	
+Help Options:
+ -h, --help                Show this help message
+```
