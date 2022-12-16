@@ -29,7 +29,7 @@ func Test_Main(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		<-done
-		e := syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
+		e := syscall.Kill(syscall.Getpid(), syscall.SIGINT)
 		require.NoError(t, e)
 	}()
 

@@ -98,21 +98,13 @@ func activateCleanup(ctx context.Context, reagg *storage.Reaggregator) {
 	go func(ctx context.Context) {
 		tk := time.NewTicker(time.Hour * 24)
 		defer tk.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				log.Printf("[INFO] celanup cancelation requested")
-				return
-			case <-tk.C:
-				err := reagg.Do(ctx) // goroutine that runs this once a day ??
-				if err != nil {
-					log.Printf("[WARN] failed to cleanup, %v", err)
-				}
+		for range tk.C {
+			err := reagg.Do(ctx) // goroutine that runs this once a day ??
+			if err != nil {
+				panic(err)
 			}
 		}
 	}(ctx)
-
 }
 
 //func cleanup() error {
