@@ -47,7 +47,7 @@ func main() {
 	// trap Ctrl+C and call cancel on the context
 	ctx, cancel := context.WithCancel(ctx)
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(c, os.Interrupt, syscall.SIGINT)
 	defer func() {
 		signal.Stop(c)
 		cancel()
@@ -98,11 +98,32 @@ func activateCleanup(ctx context.Context, reagg *storage.Reaggregator) {
 	go func(ctx context.Context) {
 		tk := time.NewTicker(time.Hour * 24)
 		defer tk.Stop()
-		for range tk.C {
-			err := reagg.Do(ctx) // goroutine that runs this once a day ??
-			if err != nil {
-				panic(err)
+
+		for {
+			select {
+			case <-ctx.Done():
+				log.Printf("[INFO] celanup cancelation requested")
+				return
+			case <-tk.C:
+				err := reagg.Do(ctx) // goroutine that runs this once a day ??
+				if err != nil {
+					log.Printf("[WARN] failed to cleanup, %v", err)
+				}
 			}
 		}
 	}(ctx)
+
 }
+
+//func cleanup() error {
+//	wg := sync.WaitGroup{}
+//	for i:=0; i<100; i++ {
+//		wg.Add(1)
+//		go func() {
+//			defer wg.Done()
+//			log.Printf("")
+//			time.Sleep(time.Second)
+//		}()
+//	}
+//	wg.Wait()
+//}

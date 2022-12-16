@@ -2,64 +2,66 @@
 
 ## Description
 
-The Metrics Monitoring service acts as a rest crud service to insert update 
-and retrieve metrics that allows a user to monitor metrics during a specified 
-timeframe with a specified interval.
+The Metrics Monitoring service acts as a rest CRUD service to insert, update, 
+and retrieve metrics which allows a user to monitor metrics during a specified 
+date range with a specified duration.
 
 ## Architecture and technical details
 
 ### Collecting data
 
-Using a rest-like API the data is received by the server to process.
-A POST request to save a metric entry contains the name of a metric, the value 
-and the timestamp. This POST request uses a basic authentication method. When the request is processed by the server, the data about the 
-metric is saved in the server's cache. The local memory is set up to hold only 1 
-minute of data which means that if multiple POST requests are received for the same 
-metric in one minute, 
-they will be aggregated by summing up the values to create a one-minute interval 
-value for the metric. The aggregation process in the server's cache is developed in 
+Using a rest-like API the data is received by the server to be processed.
+A POST request to save a metrics entry contains the name of the metric, the value, 
+and the timestamp. This POST request is protected by a basic authentication.
+When the request is processed by the server, the data pertaining to the 
+metric is saved in the server's local cache. The local memory cache is set up to hold only 1 
+minute of data, which means that if multiple POST requests are received for the same 
+metric in one minute, they will be aggregated by summing up the values to create one minute worth 
+of data for this metric. The aggregation process in the server's cache is developed in 
 order to ensure a consistent level of granularity of one minute for data that will 
-be pushed to a MongoDB database. A goroutine which runs every minute was created to 
-verify that as soon as the age of the metric in server's cache reaches one minute, 
-the data for the metric is aggregated and pushed to the database. This two-stage 
-commit logic also prevents loss of data from the local memory beyond a one-minute 
+later on be pushed to a MongoDB database. 
+
+A goroutine which runs every minute was created to 
+verify that as soon as the age of the metric in the server's cache reaches one minute, 
+the data for the metric is aggregated and pushed to the database. 
+
+This two-stage commit logic also prevents loss of data from the local memory beyond a one-minute 
 interval. 
 
 ### Data storing/management
 
-A separate clean-up process was developed for the metrics data stored in the database.
-A goroutine runs the clean-up process every 24 hours. The server admin can customize 
-the criteria for which metric gets aggregated, for instance, each metric that is older
-than 24 hours will be aggregated into a 5-minute interval instead of the original 
-1-minute interval; each metric that is older than 7 days will be aggregated into a 
-30-minute interval and so on. A DELETE request protected by a basic authentication 
-method allows to delete a metric from the local memory and the database.
+A separate clean-up process ensures that the metrics data stored in the database gets cleaned up. 
+This runs asynchronously (in a separate goroutine) every 24 hours. Criteria for which metric gets aggregated can be customized,
+for instance, each metric that is older than 24 hours will be aggregated into a 5-minute interval instead of the original 
+1-minute interval. In this case, each metric that is older than 7 days will be aggregated into a 
+30-minute interval, and so on. A DELETE request protected by a basic authentication 
+method allows the user to delete a metric from the local memory and the database.
 
-### Data retrieving
+### Data retrieval
 
-A user can request a list of available metrics in the MongoDB database, data for a 
-specific metric for a user defined time frame and interval, and data for all the 
-available metrics for a user defined time frame and interval. If the data for the metric
-in the database does not match the requested interval, the server will process the 
-request in one of the three ways:
-- approximate the data by aggregating smaller available intervals into the requested 
-interval
+A user can request a list of available metrics from the storage (MongoDB), data for a 
+specific metric for a given date range and duration, as well as data for all the 
+available metrics for a given date range and duration. If the data for the metric
+in the database does not match the requested duration, the server will process the 
+request in one of three ways:
+- approximate the data by aggregating smaller available durations into the requested 
+duration
 - approximate the data based on an admin-defined threshold, for example, if the available 
-interval is within 25% of the requested interval, it will be considered as a "close match"
-and provided to the user
-- if no data in the database can be aggregated or "closely matched", a message "no metric
+duration is within 25% of the requested duration, it will be considered as a "close match"
+and will be provided to the user
+- if no data in the database can be aggregated or "closely matched", a message of "no metric
 in db" will be posted
 
+### User interface 
+
 A web-based UI currently has two pages: for the list of available metrics and
-for details for each of the available metrics.
+for details for each of the available metrics. Both are created on the server side from dynamic html/template.
 
 ### Non-functional aspects
 
 - all the endpoints are protected against abuses with limiters
-- the number of in-fly requests is also limited
-- reverse-proxy in front of the running container with 
-LE-based automatic SSL is set up
-
+- the number of overall in-fly requests is also limited
+- reverse-proxy in front of the running container with LE-based automatic SSL is set up
 
 
 ## Run in Docker
@@ -184,6 +186,8 @@ LE-based automatic SSL is set up
         "status": "ok" 
         }
         ```
+
+_also see [requests.http](https://github.com/mrnbort/metrics/blob/main/requests.http) for more examples_
       
 ## command line parameters
 

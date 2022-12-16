@@ -87,6 +87,7 @@ func (a *Reaggregator) process(ctx context.Context, bk ReaggrBucket) error {
 }
 
 func aggrProcess(ctx context.Context, results []metric.Entry, result metric.Entry, interval time.Duration) ([]metric.Entry, error) {
+
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()

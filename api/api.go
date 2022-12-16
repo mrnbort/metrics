@@ -54,10 +54,12 @@ func (s Service) Run(ctx context.Context) error {
 
 	go func() {
 		<-ctx.Done()
+		log.Printf("[DEBUG] termination requested")
 		err := s.httpServer.Close()
 		if err != nil {
 			log.Printf("[WARN] can't close server: %v", err)
 		}
+		log.Printf("[INFO] server closed")
 	}()
 
 	if err := s.httpServer.ListenAndServe(); err != http.ErrServerClosed {
