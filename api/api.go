@@ -230,10 +230,6 @@ func (s Service) webGetMetricsList(w http.ResponseWriter, r *http.Request) {
 		render.JSON(w, r, JSON{"error": err.Error()})
 		return
 	}
-
-	//w.Header().Set("Content-Type", "text/html")
-	//w.WriteHeader(http.StatusOK)
-	//_, _ = w.Write([]byte("<html>metrics-list</html>"))
 }
 
 // GET /metric-details?name={metric}

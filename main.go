@@ -39,8 +39,6 @@ func main() {
 		os.Exit(2)
 	}
 
-	//ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	//defer cancel()
 	log.Printf("stared metrics service")
 	ctx := context.Background()
 
@@ -99,23 +97,10 @@ func activateCleanup(ctx context.Context, reagg *storage.Reaggregator) {
 		tk := time.NewTicker(time.Hour * 24)
 		defer tk.Stop()
 		for range tk.C {
-			err := reagg.Do(ctx) // goroutine that runs this once a day ??
+			err := reagg.Do(ctx)
 			if err != nil {
 				panic(err)
 			}
 		}
 	}(ctx)
 }
-
-//func cleanup() error {
-//	wg := sync.WaitGroup{}
-//	for i:=0; i<100; i++ {
-//		wg.Add(1)
-//		go func() {
-//			defer wg.Done()
-//			log.Printf("")
-//			time.Sleep(time.Second)
-//		}()
-//	}
-//	wg.Wait()
-//}

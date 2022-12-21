@@ -238,7 +238,6 @@ func (d *DBAccessor) aggregateSmallerInterval(ctx context.Context, name string, 
 		return nil, err
 	}
 	defer cursor.Close(ctx)
-	//dict := make(map[string]metric.Entry)
 
 	// aggregate available interval
 	for cursor.Next(ctx) {
@@ -251,11 +250,6 @@ func (d *DBAccessor) aggregateSmallerInterval(ctx context.Context, name string, 
 			return nil, fmt.Errorf("failed to reaggregate: %w", err)
 		}
 	}
-
-	// append dict values to the final result
-	//for _, v := range dict {
-	//	results = append(results, v)
-	//}
 
 	return results, nil
 }

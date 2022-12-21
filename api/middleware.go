@@ -34,6 +34,7 @@ func (a *AuthMidlwr) Handler(next http.Handler) http.Handler {
 	})
 }
 
+// PingMiddleware returns pong to ping request
 func PingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/ping" {

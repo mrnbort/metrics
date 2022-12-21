@@ -20,14 +20,8 @@ func TestService_postMetric(t *testing.T) {
 
 	strg := &StorageMock{
 		UpdateFunc: func(ctx context.Context, m metric.Entry) error {
-			//assert.Equal(t, "test", m.Name)
-			//assert.Equal(t, 123, m.Value)
-			//assert.Equal(t, tm, m.TimeStamp)
 			return nil
 		},
-		//GetFunc: func(from time.Time, to time.Time, interval time.Duration) ([]metric.Entry, error) {
-		//	return []metric.Entry{{Name: "aa", Value: 123}, {}, {}}, nil
-		//},
 	}
 
 	svc := &Service{Storage: strg, Auth: AuthMidlwr{
@@ -236,13 +230,8 @@ func TestService_getMetric(t *testing.T) {
 
 	{ // successful attempt
 		tmFrom := "2022-08-03T16:23:45Z"
-		//tmFrom := time.Date(2022, 8, 3, 16, 23, 45, 0, time.UTC)
 		tmTo := "2022-08-04T17:24:45Z"
-		//tmTo := tmFrom.Add(24 * time.Hour)
 		interval := time.Minute * 30
-		//req, err := http.NewRequest("POST", ts.URL+"/get-metric",
-		//	strings.NewReader(fmt.Sprintf(`{"name": "test", "from": "%s", "to": "%s", "interval": %d}`,
-		//		tmFrom.Format(time.RFC3339), tmTo.Format(time.RFC3339), interval)))
 		req, err := http.NewRequest("POST", ts.URL+"/get-metric",
 			strings.NewReader(fmt.Sprintf(`{"name": "test", "from": %q, "to": %q, "interval": %d}`,
 				tmFrom, tmTo, interval)))

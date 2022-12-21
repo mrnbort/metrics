@@ -51,20 +51,3 @@ func (duration *Duration) UnmarshalJSON(b []byte) error {
 	}
 	return nil
 }
-
-// comments to Capitalized
-// fix lookup interval
-// research ctx
-// in api_test change time to str
-// to rebuild docker compose build, docker compose up
-// tests for metric_test
-// ctx add to reagrr
-// add calls check to api tests
-// test run that ctx canceled ?????
-// write requests.http
-// read.me
-// go templates: feed-master: api/web.go, webapp
-
-// ci/cd
-// go-realeser ---look at cronn
-// integration test: main_test.go
